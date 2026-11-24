@@ -4,19 +4,23 @@ import com.application.rag.contextiq_backend.dto.*;
 import com.application.rag.contextiq_backend.service.RagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springdoc.core.converters.FileSupportConverter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
-import javax.annotation.processing.SupportedAnnotationTypes;
+import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/chat")
@@ -27,7 +31,6 @@ import java.time.LocalDateTime;
 public class ChatController
 {
     private final RagService ragService;
-    private final FileSupportConverter fileSupportConverter;
 
     @PostMapping("/query")
     @Operation(
@@ -49,15 +52,64 @@ public class ChatController
     }
 
     //for stream processing
-    @PostMapping("/stream")
+    @PostMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(
             summary = "Stream real-time Q&A answer tokens via Server-Sent Events (SSE)"
     )
-    public Flux<String> streamQuestion(
-            @Valid @RequestBody ChatRequestDto requestDto
+    public SseEmitter streamQuestion(
+            @Valid @RequestBody ChatRequestDto requestDto,
+            HttpServletResponse response
     )
     {
-        return ragService.streamQuestionAnswer(requestDto);
+        // Disable proxy / servlet buffering
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("X-Accel-Buffering", "no");
+
+        SseEmitter emitter = new SseEmitter(180_000L); // 3 minutes timeout
+        AtomicBoolean isCompleted = new AtomicBoolean(false);
+
+        emitter.onCompletion(() -> isCompleted.set(true));
+        emitter.onTimeout(() -> {
+            isCompleted.set(true);
+            emitter.complete();
+        });
+        emitter.onError((ex) -> isCompleted.set(true));
+
+        Flux<String> flux = ragService.streamQuestionAnswer(requestDto);
+
+        flux.subscribe(
+                token -> {
+                    if (token != null && !token.isEmpty() && !isCompleted.get()) {
+                        try {
+                            // Emit structured JSON SSE payload to preserve exact whitespace and special characters
+                            emitter.send(SseEmitter.event().data(Map.of("content", token)));
+                        } catch (Exception e) {
+                            log.debug("Stream emitter send error or client disconnect: {}", e.getMessage());
+                            isCompleted.set(true);
+                            emitter.completeWithError(e);
+                        }
+                    }
+                },
+                error -> {
+                    log.error("Error during streaming: ", error);
+                    if (!isCompleted.get()) {
+                        isCompleted.set(true);
+                        emitter.completeWithError(error);
+                    }
+                },
+                () -> {
+                    if (!isCompleted.get()) {
+                        try {
+                            emitter.send(SseEmitter.event().data("[DONE]"));
+                        } catch (Exception ignore) {}
+                        isCompleted.set(true);
+                        emitter.complete();
+                    }
+                }
+        );
+
+        return emitter;
     }
 
     //for similarity search

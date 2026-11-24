@@ -305,7 +305,7 @@ export const DocumentDetailModal = () => {
 
             <button
               onClick={handleChatWithDocument}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-md shadow-blue-500/20 transition"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-xs font-semibold shadow-sm transition"
             >
               <MessageSquare className="w-4 h-4" />
               <span>Chat with Document</span>

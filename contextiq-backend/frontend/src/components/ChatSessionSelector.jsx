@@ -88,14 +88,14 @@ export const ChatSessionSelector = () => {
         </div>
 
         {/* New Chat Options */}
-        <div className="p-3 border-b border-slate-200 dark:border-[#1e293b]/60 grid grid-cols-2 gap-2">
+        <div className="p-3 border-b border-slate-200 dark:border-slate-800/60 grid grid-cols-2 gap-2">
           <button
             onClick={() => {
               switchToGeneralChat();
               createNewSession('General AI Chat', null);
               setIsChatDrawerOpen(false);
             }}
-            className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[11px] font-semibold shadow-md shadow-purple-600/20 transition"
+            className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-[11px] font-medium transition"
             title="Chat without document retrieval"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -107,7 +107,7 @@ export const ChatSessionSelector = () => {
               createNewSession('Document RAG Chat', null);
               setIsChatDrawerOpen(false);
             }}
-            className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold shadow-md shadow-blue-500/20 transition"
+            className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-[11px] font-medium transition shadow-sm"
             title="Search and answer using document vectors"
           >
             <Plus className="w-3.5 h-3.5" />

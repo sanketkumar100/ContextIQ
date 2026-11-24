@@ -23,14 +23,14 @@ export const ChatArea = () => {
   } = useApp();
 
   let contextLabel = 'All Uploaded Documents';
-  let dotColor = 'bg-emerald-400 shadow-emerald-400/50';
+  let dotColor = 'bg-emerald-500';
 
   if (chatMode === 'general') {
-    contextLabel = 'Normal Chat (General AI • No Documents)';
-    dotColor = 'bg-purple-400 shadow-purple-400/50';
+    contextLabel = 'Normal Chat (General Knowledge)';
+    dotColor = 'bg-purple-500';
   } else if (chatMode === 'document' && selectedDocument) {
     contextLabel = selectedDocument.fileName;
-    dotColor = 'bg-emerald-400 shadow-emerald-400/50';
+    dotColor = 'bg-blue-500';
   }
 
   // Export conversation as markdown file
@@ -52,64 +52,74 @@ export const ChatArea = () => {
   };
 
   return (
-    <main className="flex-1 flex flex-col h-[calc(100vh-4rem)] bg-slate-50 dark:bg-[#090d16] relative overflow-hidden transition-colors">
+    <main className="flex-1 flex flex-col h-[calc(100vh-3.5rem)] bg-slate-50/50 dark:bg-[#0b0f17] relative overflow-hidden transition-colors">
       {/* Top Context & Controls Bar */}
-      <div className="h-11 border-b border-slate-200 dark:border-[#1e293b]/70 bg-white/80 dark:bg-[#0b101c]/80 backdrop-blur-sm px-6 flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 z-10 select-none">
+      <div className="h-10 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-[#0c1017]/70 backdrop-blur-sm px-4 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 z-10 select-none">
         {/* Left Context Indicator */}
-        <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${dotColor}`} />
-          <span className="text-slate-500 dark:text-slate-400">Context:</span>
-          <span className="font-semibold text-slate-900 dark:text-slate-100">{contextLabel}</span>
+        <div className="flex items-center gap-2 truncate">
+          <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
+          <span className="text-slate-400 dark:text-slate-500 font-normal">Context:</span>
+          <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{contextLabel}</span>
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-4">
-          {/* Stream Tokens Toggle */}
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="stream-toggle"
-              className="text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer select-none"
-            >
-              Stream Tokens
-            </label>
-            <button
-              id="stream-toggle"
-              role="switch"
-              aria-checked={streamTokens}
-              onClick={() => setStreamTokens(!streamTokens)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+        <div className="flex items-center gap-3">
+          {/* Stream Answers Toggle Pill */}
+          <button
+            type="button"
+            onClick={() => setStreamTokens((prev) => !prev)}
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer select-none ${
+              streamTokens
+                ? 'bg-blue-50/70 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800/60 dark:text-blue-300'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-[#121620] dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60'
+            }`}
+            title={`Streaming answers is ${streamTokens ? 'ENABLED (ON)' : 'DISABLED (OFF)'}. Click to toggle.`}
+            role="switch"
+            aria-checked={streamTokens}
+          >
+            <Radio className={`w-3.5 h-3.5 ${streamTokens ? 'text-blue-600 dark:text-blue-400 animate-pulse' : 'text-slate-400'}`} />
+            <span className="text-[11px] font-normal">Stream answers</span>
+            <div
+              className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ${
                 streamTokens ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
               }`}
             >
               <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                  streamTokens ? 'translate-x-4' : 'translate-x-0'
+                className={`inline-block h-3 w-3 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                  streamTokens ? 'translate-x-3.5' : 'translate-x-0.5'
                 }`}
               />
-            </button>
-          </div>
+            </div>
+            <span
+              className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded leading-none ${
+                streamTokens
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/80 dark:text-blue-200'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+              }`}
+            >
+              {streamTokens ? 'ON' : 'OFF'}
+            </span>
+          </button>
 
           {/* Export & Clear if conversation has messages */}
           {activeMessages.length > 0 && (
-            <>
+            <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-2">
               <button
                 onClick={handleExport}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-700 hover:text-slate-900 dark:bg-[#131b2e] dark:hover:bg-[#18233c] dark:border-slate-800 dark:text-slate-300 dark:hover:text-white transition"
-                title="Export conversation as markdown"
+                className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60 transition"
+                title="Export conversation as Markdown"
               >
-                <Download className="w-3.5 h-3.5 text-slate-400" />
-                <span>Export</span>
+                <Download className="w-3.5 h-3.5" />
               </button>
 
               <button
                 onClick={clearCurrentChat}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-300 text-slate-700 hover:text-rose-600 dark:bg-[#131b2e] dark:hover:bg-rose-950/40 dark:border-slate-800 dark:hover:border-rose-900/50 dark:text-slate-300 dark:hover:text-rose-400 transition"
-                title="Clear current messages"
+                className="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition"
+                title="Clear conversation"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Clear</span>
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>

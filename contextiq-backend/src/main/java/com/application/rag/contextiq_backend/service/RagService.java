@@ -12,10 +12,12 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,6 +31,7 @@ public class RagService
     private final VectorStore vectorStore;
     private final AppProperties appProperties;
     private final ChatClient chatClient;
+    private final JdbcTemplate jdbcTemplate;
 
 
     //to ask anything related to the document.
@@ -119,8 +122,10 @@ public class RagService
                            ---------------------                                        
                            User Message / Question: %s             
                            Instructions:
-                           - If the user's question relates to the document context above, prioritize answering using that context and reference key sections.
-                           - If the user is asking a general question, greeting, or discussing topics beyond the document context, respond helpfully and conversationally using your general knowledge while weaving in relevant document context if applicable
+                           - You are answering based on the provided Document Context above.
+                           - Answer the user's question directly, accurately, and thoroughly using the provided context.
+                           - If the user asks what is in the document, asks for a summary, or requests an explanation, provide a comprehensive, structured overview with key takeaways based on the context.
+                           - Always ground your response in the provided document context.
                     
                     """, contextText, question);
         }
@@ -250,11 +255,16 @@ public class RagService
                 ? similaritySearch 
                 : (appProperties.getRag().getSimilarityThreshold() > 0.0 ? appProperties.getRag().getSimilarityThreshold() : 0.60);
 
+        // When a user selects a specific document, the search is already strictly scoped to that document.
+        // We use similarity threshold 0.0 so that generic questions like "what is in this document", "summarize",
+        // or overview prompts are NEVER rejected by vector distance!
+        double thresholdToUse = (documentId != null) ? 0.0 : effectiveSimilarity;
+
         SearchRequest.Builder searchRequestBuilder = SearchRequest
                 .builder()
                 .query(query)
                 .topK(effectiveTopK)
-                .similarityThreshold(effectiveSimilarity);
+                .similarityThreshold(thresholdToUse);
 
         //if documentId is provided, we will filter the search results to only include chunks from that specific document, otherwise, we will search across all documents in the vector store.
         if (documentId!=null)
@@ -268,14 +278,71 @@ public class RagService
         try
         {
             List<Document> documents = vectorStore.similaritySearch(searchRequestBuilder.build());
-            log.info("Retrived {} chunks for query: '{}' (scoped docId: {}, threshold: {})", 
-                    documents.size(), query, documentId, effectiveSimilarity);
+            log.info("Retrieved {} chunks for query: '{}' (scoped docId: {}, threshold: {})", 
+                    documents.size(), query, documentId, thresholdToUse);
+
+            // If threshold filtered out everything in All Documents mode, retry with broad threshold 0.0
+            if (documents.isEmpty() && documentId == null)
+            {
+                log.info("Broadening search threshold to 0.0 for query: '{}'", query);
+                documents = vectorStore.similaritySearch(
+                        SearchRequest.builder()
+                                .query(query)
+                                .topK(effectiveTopK)
+                                .similarityThreshold(0.0)
+                                .build()
+                );
+            }
+
+            // If still empty and documentId was specified, fallback to querying vector_store directly for that document's chunks
+            if (documents.isEmpty() && documentId != null)
+            {
+                log.info("Vector similarity returned 0 chunks for documentId {}, querying vector_store directly via SQL...", documentId);
+                try {
+                    String sql = "SELECT content, metadata FROM vector_store WHERE metadata->>'documentId' = ? LIMIT ?";
+                    List<Document> directDocs = jdbcTemplate.query(sql, (rs, rowNum) -> {
+                        String content = rs.getString("content");
+                        String metaJson = rs.getString("metadata");
+                        Map<String, Object> map = new HashMap<>();
+                        try {
+                            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                            map = mapper.readValue(metaJson, Map.class);
+                        } catch (Exception ignore) {}
+                        return new Document(content, map);
+                    }, documentId.toString(), effectiveTopK);
+
+                    if (!directDocs.isEmpty()) {
+                        log.info("Direct SQL fallback retrieved {} chunks for documentId {}", directDocs.size(), documentId);
+                        return directDocs;
+                    }
+                } catch (Exception e) {
+                    log.warn("Direct SQL chunk fallback query failed: {}", e.getMessage());
+                }
+            }
 
             return documents;
         }
         catch (Exception e)
         {
             log.error("Similarity search failed for query: '{}'", query, e);
+            // Fallback for documentId via SQL if vectorStore threw exception
+            if (documentId != null) {
+                try {
+                    String sql = "SELECT content, metadata FROM vector_store WHERE metadata->>'documentId' = ? LIMIT ?";
+                    return jdbcTemplate.query(sql, (rs, rowNum) -> {
+                        String content = rs.getString("content");
+                        String metaJson = rs.getString("metadata");
+                        Map<String, Object> map = new HashMap<>();
+                        try {
+                            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                            map = mapper.readValue(metaJson, Map.class);
+                        } catch (Exception ignore) {}
+                        return new Document(content, map);
+                    }, documentId.toString(), effectiveTopK);
+                } catch (Exception ex) {
+                    log.warn("SQL fallback on exception failed: {}", ex.getMessage());
+                }
+            }
             return Collections.emptyList();
         }
     }

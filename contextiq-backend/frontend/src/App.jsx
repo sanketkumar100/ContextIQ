@@ -9,7 +9,7 @@ import { ChatSessionSelector } from './components/ChatSessionSelector';
 
 export const App = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-[#090d16] dark:text-slate-100 font-sans selection:bg-blue-600/30 selection:text-blue-500 transition-colors duration-150">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-[#0c1017] dark:text-slate-100 font-sans selection:bg-slate-200 dark:selection:bg-slate-800 transition-colors duration-150">
       {/* Top Navbar */}
       <Navbar />
 

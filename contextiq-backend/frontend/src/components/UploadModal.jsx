@@ -152,7 +152,7 @@ export const UploadModal = () => {
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-blue-400/50 dark:border-blue-500/30 hover:border-blue-500 bg-blue-50/50 dark:bg-blue-950/10 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-xl p-6 text-center cursor-pointer transition-all duration-200 group"
+            className="border-2 border-dashed border-slate-300 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-900/30 dark:hover:bg-slate-900/60 rounded-xl p-6 text-center cursor-pointer transition-all duration-200 group"
           >
             <input
               ref={fileInputRef}
@@ -162,13 +162,13 @@ export const UploadModal = () => {
               onChange={handleFileChange}
               className="hidden"
             />
-            <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-600/20 group-hover:bg-blue-200 dark:group-hover:bg-blue-600/30 border border-blue-300 dark:border-blue-500/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3 transition-transform duration-200 group-hover:scale-110">
-              <UploadCloud className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center mx-auto mb-3">
+              <UploadCloud className="w-5 h-5" />
             </div>
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white">
-              Drag & drop single or multiple documents here, or click to browse
+            <p className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200">
+              Drag & drop files here, or click to browse
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-[11px] text-slate-400 mt-1">
               Supports PDF, Word, Markdown, TXT, CSV (max 25MB each)
             </p>
           </div>
@@ -285,16 +285,16 @@ export const UploadModal = () => {
               <button
                 onClick={startUpload}
                 disabled={files.length === 0 || uploadStatus === 'uploading'}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/20 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 {uploadStatus === 'uploading' ? (
                   <>
                     <Cpu className="w-3.5 h-3.5 animate-spin" />
-                    <span>Processing & Indexing...</span>
+                    <span>Indexing...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <UploadCloud className="w-3.5 h-3.5" />
                     <span>Upload & Index</span>
                   </>
                 )}

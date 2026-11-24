@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Send, Zap, Sparkles } from 'lucide-react';
+import { ArrowUp, Square, FileText, Layers, Sparkles } from 'lucide-react';
 
 export const ChatInput = () => {
-  const { sendMessage, isSending, selectedDocument, chatMode } = useApp();
+  const { sendMessage, isSending, stopGenerating, selectedDocument, chatMode } = useApp();
   const [input, setInput] = useState('');
   const textareaRef = useRef(null);
 
   const placeholderText = chatMode === 'general'
-    ? 'Ask anything (coding, concepts, writing, brainstorming)...'
+    ? 'Ask anything in general chat...'
     : selectedDocument
     ? `Ask a question about ${selectedDocument.fileName}...`
     : 'Ask a question across all documents...';
@@ -32,14 +32,14 @@ export const ChatInput = () => {
   const handleInput = (e) => {
     setInput(e.target.value);
     e.target.style.height = 'auto';
-    e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+    e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
   };
 
   return (
-    <div className="p-4 bg-gradient-to-t from-slate-50 via-slate-50/90 dark:from-[#090d16] dark:via-[#090d16]/90 to-transparent">
-      <div className="max-w-4xl mx-auto">
-        {/* Input container */}
-        <div className="relative flex items-center bg-white dark:bg-[#101728] border border-slate-300 dark:border-slate-700/80 hover:border-slate-400 dark:hover:border-slate-600 focus-within:border-blue-500 rounded-2xl p-2 shadow-lg shadow-black/5 dark:shadow-xl dark:shadow-black/40 transition-all">
+    <div className="p-4 bg-gradient-to-t from-slate-50 via-slate-50/80 dark:from-[#0b0f17] dark:via-[#0b0f17]/80 to-transparent">
+      <div className="max-w-3xl mx-auto">
+        {/* Input Card Container */}
+        <div className="bg-white dark:bg-[#121620] border border-slate-200 dark:border-slate-800 focus-within:border-slate-400 dark:focus-within:border-slate-600 rounded-2xl p-2.5 shadow-sm transition-all">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -48,48 +48,65 @@ export const ChatInput = () => {
             onKeyDown={handleKeyDown}
             placeholder={placeholderText}
             disabled={isSending}
-            className="flex-1 bg-transparent text-sm text-slate-800 placeholder-slate-400 dark:text-slate-100 dark:placeholder-slate-400 px-3 py-1.5 outline-none resize-none max-h-32 leading-relaxed"
+            className="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 dark:text-slate-100 dark:placeholder-slate-500 px-2 py-1 outline-none resize-none max-h-40 leading-relaxed font-sans"
           />
 
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isSending}
-            className={`p-2.5 rounded-xl transition-all flex items-center justify-center ${
-              input.trim() && !isSending
-                ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-500/30 cursor-pointer transform hover:scale-105 active:scale-95'
-                : 'bg-slate-200 text-slate-400 dark:bg-slate-800/80 dark:text-slate-500 cursor-not-allowed'
-            }`}
-            title="Send Message"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+          {/* Bottom Toolbar inside input */}
+          <div className="flex items-center justify-between pt-1 px-1 mt-1 border-t border-slate-100 dark:border-slate-800/60">
+            {/* Scope Indicator Pill */}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              {chatMode === 'general' ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Normal AI Mode</span>
+                </span>
+              ) : selectedDocument ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  <FileText className="w-3 h-3 text-slate-400" />
+                  <span className="truncate max-w-[220px]">{selectedDocument.fileName}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                  <Layers className="w-3 h-3 text-slate-400" />
+                  <span>All Documents</span>
+                </span>
+              )}
+            </div>
+
+            {/* Right Action: Send or Stop */}
+            <div className="flex items-center gap-2">
+              {isSending ? (
+                <button
+                  type="button"
+                  onClick={stopGenerating}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-xs font-medium transition cursor-pointer shadow-sm"
+                  title="Stop generating answer"
+                >
+                  <Square className="w-3 h-3 fill-current" />
+                  <span>Stop</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSend}
+                  disabled={!input.trim()}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${
+                    input.trim()
+                      ? 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 shadow-sm cursor-pointer'
+                      : 'bg-slate-100 text-slate-300 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed'
+                  }`}
+                  title="Send (Enter)"
+                >
+                  <ArrowUp className="w-4 h-4 stroke-[2.5]" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Input Footer Instructions */}
-        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 px-2 select-none">
-          <div className="flex items-center gap-1.5">
-            <span>Press</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 border border-slate-300 text-slate-600 dark:bg-slate-800 dark:border-slate-700 font-mono text-[10px] dark:text-slate-400">
-              Enter
-            </kbd>
-            <span>to send,</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-200 border border-slate-300 text-slate-600 dark:bg-slate-800 dark:border-slate-700 font-mono text-[10px] dark:text-slate-400">
-              Shift+Enter
-            </kbd>
-            <span>for newline</span>
-          </div>
-
-          {chatMode === 'general' ? (
-            <div className="flex items-center gap-1 text-purple-400 font-medium">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Normal AI Chat</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-blue-400 font-medium">
-              <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>Grounded RAG</span>
-            </div>
-          )}
+        <div className="mt-1.5 flex items-center justify-center text-[11px] text-slate-400 dark:text-slate-500 select-none">
+          <span>Enter to send • Shift+Enter for new line</span>
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { apiService } from '../api/apiService';
 
 const AppContext = createContext(null);
@@ -128,6 +128,14 @@ export const AppProvider = ({ children }) => {
   });
 
   const [isSending, setIsSending] = useState(false);
+  const abortControllerRef = useRef(null);
+
+  const stopGenerating = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  };
 
   // Sync theme
   useEffect(() => {
@@ -148,9 +156,13 @@ export const AppProvider = ({ children }) => {
     localStorage.setItem(STORAGE_KEY_STREAM, JSON.stringify(streamTokens));
   }, [streamTokens]);
 
-  // Sync sessions
+  // Sync sessions (avoid blocking synchronous localStorage writes on every token during active stream)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(chatSessions));
+    const isStreamingActive = chatSessions.some((s) => s.messages.some((m) => m.isStreaming));
+    if (isStreamingActive) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_SESSIONS, JSON.stringify(chatSessions));
+    } catch {}
   }, [chatSessions]);
 
   useEffect(() => {
@@ -302,26 +314,69 @@ export const AppProvider = ({ children }) => {
     const docId = (chatMode === 'document' && selectedDocument) ? selectedDocument.id : null;
     const startTime = Date.now();
 
+    // Prepare abort controller for cancellation
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    // Concurrently fetch citations for document grounded queries
+    let citationsPromise = null;
+    if (useDocs) {
+      citationsPromise = apiService.searchSimilarity({
+        query: trimmed,
+        documentId: docId,
+        topK: 5,
+        similaritySearch: 0.50,
+      }).catch(() => null);
+    }
+
     try {
       if (streamTokens) {
-        // Stream token by token
+        // Stream token by token via SSE / chunked reader
         let currentText = '';
-        await apiService.streamQuestion(
-          {
+        try {
+          await apiService.streamQuestion(
+            {
+              question: trimmed,
+              documentId: docId,
+              conversationId: activeSessionId,
+              useDocuments: useDocs,
+            },
+            (delta, accumulated) => {
+              currentText = accumulated;
+              updateActiveMessages((prev) =>
+                prev.map((m) => (m.id === assistantMsgId ? { ...m, text: accumulated } : m))
+              );
+            },
+            controller.signal
+          );
+        } catch (streamErr) {
+          if (controller.signal.aborted) throw streamErr;
+          console.warn('Stream failed or not supported by endpoint, falling back to query API:', streamErr);
+          // Automatic graceful fallback to askQuestion
+          const result = await apiService.askQuestion({
             question: trimmed,
             documentId: docId,
             conversationId: activeSessionId,
             useDocuments: useDocs,
-          },
-          (delta, accumulated) => {
-            currentText = accumulated;
-            updateActiveMessages((prev) =>
-              prev.map((m) => (m.id === assistantMsgId ? { ...m, text: accumulated } : m))
-            );
+          });
+          currentText = result?.answer || 'No response returned from the model.';
+          if (result?.citations?.length > 0) {
+            citationsPromise = Promise.resolve({ matches: result.citations });
           }
-        );
+        }
 
-        // Streaming finished
+        // Await citations if RAG mode
+        let citations = [];
+        if (citationsPromise) {
+          try {
+            const searchRes = await citationsPromise;
+            citations = searchRes?.matches || [];
+          } catch (e) {
+            console.warn('Could not retrieve citations during stream:', e);
+          }
+        }
+
+        // Finalize streaming
         const totalDuration = Date.now() - startTime;
         updateActiveMessages((prev) =>
           prev.map((m) =>
@@ -329,6 +384,7 @@ export const AppProvider = ({ children }) => {
               ? {
                   ...m,
                   text: currentText || 'Received response.',
+                  citations: citations.length > 0 ? citations : m.citations,
                   isStreaming: false,
                   responseTimeMs: totalDuration,
                 }
@@ -360,27 +416,43 @@ export const AppProvider = ({ children }) => {
         );
       }
     } catch (err) {
-      console.error('Error generating answer:', err);
-      // Graceful conversational response if backend offline or error
-      const totalDuration = Date.now() - startTime;
-      const errorMsg =
-        err?.response?.data?.message ||
-        `Hello! I received your question: "${trimmed}". The ContextIQ backend is currently connecting or processing your request. Please ensure the backend is running at http://localhost:8081.`;
+      if (err.name === 'AbortError' || controller.signal.aborted) {
+        // User voluntarily stopped generation
+        const totalDuration = Date.now() - startTime;
+        updateActiveMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? {
+                  ...m,
+                  isStreaming: false,
+                  responseTimeMs: totalDuration,
+                }
+              : m
+          )
+        );
+      } else {
+        console.error('Error generating answer:', err);
+        const totalDuration = Date.now() - startTime;
+        const errorMsg =
+          err?.response?.data?.message ||
+          `Hello! I received your question: "${trimmed}". The ContextIQ backend is currently processing or offline. Please make sure the backend is running at http://localhost:8081.`;
 
-      updateActiveMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsgId
-            ? {
-                ...m,
-                text: errorMsg,
-                isStreaming: false,
-                responseTimeMs: totalDuration,
-              }
-            : m
-        )
-      );
+        updateActiveMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? {
+                  ...m,
+                  text: errorMsg,
+                  isStreaming: false,
+                  responseTimeMs: totalDuration,
+                }
+              : m
+          )
+        );
+      }
     } finally {
       setIsSending(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -438,6 +510,7 @@ export const AppProvider = ({ children }) => {
         activeMessages,
         sendMessage,
         isSending,
+        stopGenerating,
         // Preferences
         streamTokens,
         setStreamTokens,
