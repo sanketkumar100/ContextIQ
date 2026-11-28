@@ -58,6 +58,8 @@ public class DocumentIngestionService
                 enrichedMetadata.put("fileName", metaData.getFileName());
                 enrichedMetadata.put("contentType", metaData.getContentType());
                 enrichedMetadata.put("chunkIndex", i);
+                //adding userId to the chunks so that we can track which user uploaded.
+                enrichedMetadata.put("userId", metaData.getUser().getId().toString());
                 //preserve or calculate page number if available
                 Object pageNumber = chunk.getMetadata().get("page_number");
                 if (pageNumber == null) {

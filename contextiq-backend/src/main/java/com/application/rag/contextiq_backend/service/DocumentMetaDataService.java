@@ -4,6 +4,7 @@ import com.application.rag.contextiq_backend.dto.DocumentMetadataDto;
 import com.application.rag.contextiq_backend.dto.DocumentResponseDto;
 import com.application.rag.contextiq_backend.entity.DocumentMetaData;
 import com.application.rag.contextiq_backend.entity.DocumentStatus;
+import com.application.rag.contextiq_backend.entity.User;
 import com.application.rag.contextiq_backend.exception.DocumentProcessingException;
 import com.application.rag.contextiq_backend.exception.ResourceNotFoundException;
 import com.application.rag.contextiq_backend.repository.DocumentMetaDataRepo;
@@ -34,19 +35,21 @@ public class DocumentMetaDataService
     private final ModelMapper modelMapper;
 
 
-    public DocumentResponseDto uplodadAndProcess(MultipartFile file)
+    public DocumentResponseDto uplodadAndProcess(MultipartFile file, User user)
     {
 
         String fileName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "document";
         String contentType = file.getContentType() !=null ? file.getContentType().toLowerCase() : "application/octet-stream";
 
         //creating document metadata.
+        //storing the user details in the document metadata so that we can track which user uploaded which document.
         DocumentMetaData  documentMetaData= DocumentMetaData.builder()
                 .fileName(fileName)
                 .contentType(contentType)
                 .status(DocumentStatus.UPLOADING)
                 .fileSize(file.getSize())
                 .createdAt(LocalDateTime.now())
+                .user(user)
                 .build();
 
         //save the document metadata to the database
@@ -81,23 +84,25 @@ public class DocumentMetaDataService
                 .chunkCreated(chunksCreated)
                 .status(documentMetaData.getStatus())
                 .message("document successfully processed and indexed.")
+                .userId(user.getId())
                 .build();
     }
 
     //for processing multiple documents at once.
-    public List<DocumentResponseDto> uploadMultipleDocuments(List<MultipartFile> files)
+    public List<DocumentResponseDto> uploadMultipleDocuments(List<MultipartFile> files, User user)
     {
         List<DocumentResponseDto> responseDtos = new ArrayList<>();//we will store the response and send it to the controller.
 
         for (MultipartFile file : files)
         {
-            DocumentResponseDto result = this.uplodadAndProcess(file);  //we already defined this method for the single document upload and processing.
+            DocumentResponseDto result = this.uplodadAndProcess(file, user);  //we already defined this method for the single document upload and processing.
             responseDtos.add(result);//storing the result or response in the list.
 
         }
         return responseDtos;
     }
 
+    //this method returns all the document but, now as we are isolating the documents per user, this is of use. But for ADMIN it can be useful.
     public List<DocumentMetadataDto> getAllDocuments()
     {
         List<DocumentMetaData> allDocuments = documentMetaDataRepo.findAllByOrderByCreatedAtDesc();
@@ -107,6 +112,16 @@ public class DocumentMetaDataService
                 .toList();
 
     }
+
+    public List<DocumentMetadataDto> getAllDocumentsByUser(User user)
+    {
+        List<DocumentMetaData> documents = documentMetaDataRepo.findByUserOrderByCreatedAtDesc(user);
+
+        return documents.stream()
+                .map(documentMetadata -> modelMapper.map(documentMetadata, DocumentMetadataDto.class))
+                .toList();
+    }
+
 
     public DocumentMetadataDto getDocumentById(UUID id)
     {

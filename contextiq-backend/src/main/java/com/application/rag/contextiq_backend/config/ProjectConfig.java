@@ -1,11 +1,17 @@
 package com.application.rag.contextiq_backend.config;
 
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,8 +21,11 @@ public class ProjectConfig
 {
 
     @Bean
-    public ChatClient chatClient(ChatClient.Builder builder)
+    public ChatClient chatClient(ChatClient.Builder builder, ChatMemory memory)
     {
+
+        log.info("ChatMemory class name {}", memory.getClass().getName());
+
         return builder
                 .defaultSystem("""
                         You are ContextIQ, an intelligent, versatile, and friendly AI document intelligence assistant.
@@ -30,7 +39,10 @@ public class ProjectConfig
                          
                          Document COntext is:
                          
+                         {doc_context}
+                         
                         """)
+                .defaultAdvisors(new SimpleLoggerAdvisor(), MessageChatMemoryAdvisor.builder(memory).build())//it uses in memory repository by default to store the chat history. We can also use database to store the chat history.
                 .build();
     }
 
@@ -41,6 +53,8 @@ public class ProjectConfig
     @Bean
     public OpenAPI openAPI()
     {
+        String securitySchemeName = "bearerAuth";
+
         return new OpenAPI()
                 .info(
                         new Info()
@@ -53,6 +67,19 @@ public class ProjectConfig
                                         .url("https://github.com/sanketkumar100")
                                 )
 
+                ).components(new Components()
+                        .addSecuritySchemes(
+                                securitySchemeName,
+                                new SecurityScheme()
+                                        .name(securitySchemeName)
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                        ))
+
+                .addSecurityItem(
+                        new SecurityRequirement()
+                                .addList(securitySchemeName)
                 );
     }
 

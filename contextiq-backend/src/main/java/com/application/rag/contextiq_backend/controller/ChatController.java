@@ -1,6 +1,7 @@
 package com.application.rag.contextiq_backend.controller;
 
 import com.application.rag.contextiq_backend.dto.*;
+import com.application.rag.contextiq_backend.entity.User;
 import com.application.rag.contextiq_backend.service.RagService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
@@ -37,10 +39,14 @@ public class ChatController
             summary = "Ask a question against all documents or a specific document with citations"
     )
     public ResponseEntity<ApiResponse<ChatResponseDto>> askQuestion(
-            @Valid @RequestBody ChatRequestDto requestDto
+            @Valid @RequestBody ChatRequestDto requestDto,
+            Authentication authentication
             )
     {
-        ChatResponseDto chatResponseDto = ragService.askQuestion(requestDto);
+        //getting the user from the authentication object.
+        User user = (User) authentication.getPrincipal();
+
+        ChatResponseDto chatResponseDto = ragService.askQuestion(requestDto, user);
         return ResponseEntity.ok(
                 ApiResponse.<ChatResponseDto>builder()
                         .success(true)
@@ -58,9 +64,13 @@ public class ChatController
     )
     public SseEmitter streamQuestion(
             @Valid @RequestBody ChatRequestDto requestDto,
-            HttpServletResponse response
+            HttpServletResponse response,
+            Authentication authentication
     )
     {
+        //getting the user from the authentication object.
+        User user = (User) authentication.getPrincipal();
+
         // Disable proxy / servlet buffering
         response.setHeader("Cache-Control", "no-cache, no-transform");
         response.setHeader("Connection", "keep-alive");
@@ -76,7 +86,7 @@ public class ChatController
         });
         emitter.onError((ex) -> isCompleted.set(true));
 
-        Flux<String> flux = ragService.streamQuestionAnswer(requestDto);
+        Flux<String> flux = ragService.streamQuestionAnswer(requestDto, user);
 
         flux.subscribe(
                 token -> {
@@ -117,9 +127,15 @@ public class ChatController
     @Operation(
             summary = "Perform semantic similarity search on stored document vectors"
     )
-    public ResponseEntity<ApiResponse<SearchResultDto>> searchSimilar(@Valid @RequestBody SearchRequestDto request)
+    public ResponseEntity<ApiResponse<SearchResultDto>> searchSimilar(
+            @Valid @RequestBody SearchRequestDto request,
+            Authentication authentication
+    )
     {
-        SearchResultDto results = ragService.searchSimilarityChunks(request);
+        //getting the user from the authentication object.
+        User user = (User) authentication.getPrincipal();
+
+        SearchResultDto results = ragService.searchSimilarityChunks(request, user);
 
         return ResponseEntity.ok(
                 ApiResponse.<SearchResultDto>builder()

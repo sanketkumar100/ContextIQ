@@ -22,4 +22,5 @@ public class DocumentResponseDto
     private Integer chunkCreated;
     private String message;
 
+    private Long userId;
 }

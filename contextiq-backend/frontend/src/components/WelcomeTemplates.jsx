@@ -1,19 +1,22 @@
 import React from 'react';
-import { useApp } from '../context/AppContext';
-import { 
-  FileText, 
-  HelpCircle, 
-  CheckSquare, 
+import {
+  FileText,
+  HelpCircle,
+  CheckSquare,
   Lightbulb,
   Code2,
   PenTool,
   Brain,
   Sparkles,
-  Bookmark
+  Bookmark,
 } from 'lucide-react';
+import { useDocumentStore } from '../store/documentStore';
+import { useConversationStore } from '../store/conversationStore';
 
 export const WelcomeTemplates = () => {
-  const { sendMessage, selectedDocument, chatMode } = useApp();
+  const sendMessage = useConversationStore((s) => s.sendMessage);
+  const selectedDocument = useDocumentStore((s) => s.selectedDocument);
+  const chatMode = useDocumentStore((s) => s.chatMode);
 
   const isGeneral = chatMode === 'general';
 
@@ -62,28 +65,32 @@ export const WelcomeTemplates = () => {
       title: 'Brainstorm Solutions',
       description: 'Explore creative ideas, angles, and strategies for your project.',
       icon: <Sparkles className="w-4 h-4 text-slate-600 dark:text-slate-400" />,
-      prompt: 'Brainstorm 5 innovative ideas or strategic angles for building a modern web application.',
+      prompt:
+        'Brainstorm 5 innovative ideas or strategic angles for building a modern web application.',
     },
     {
       id: 'code-debug',
       title: 'Code Architecture',
       description: 'Write clean code patterns, discuss algorithms, or debug logic.',
       icon: <Code2 className="w-4 h-4 text-slate-600 dark:text-slate-400" />,
-      prompt: 'How do I implement efficient debounce and throttle functions in JavaScript/TypeScript? Explain with clean examples.',
+      prompt:
+        'How do I implement efficient debounce and throttle functions in JavaScript/TypeScript? Explain with clean examples.',
     },
     {
       id: 'draft-write',
       title: 'Draft & Refine',
       description: 'Draft a professional communication, summary, or report.',
       icon: <PenTool className="w-4 h-4 text-slate-600 dark:text-slate-400" />,
-      prompt: 'Draft a professional update email to stakeholders summarizing the successful completion of frontend integration.',
+      prompt:
+        'Draft a professional update email to stakeholders summarizing the successful completion of frontend integration.',
     },
     {
       id: 'explain-concept',
       title: 'Intuitive Analogies',
       description: 'Break down complex concepts into simple, intuitive explanations.',
       icon: <Brain className="w-4 h-4 text-slate-600 dark:text-slate-400" />,
-      prompt: 'Explain how Vector Databases and cosine similarity work in AI RAG applications using an intuitive analogy.',
+      prompt:
+        'Explain how Vector Databases and cosine similarity work in AI RAG applications using an intuitive analogy.',
     },
   ];
 
@@ -98,9 +105,7 @@ export const WelcomeTemplates = () => {
 
       {/* Main Title & Description */}
       <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-slate-100 tracking-tight mb-2">
-        {isGeneral
-          ? 'How can I assist you today?'
-          : 'What would you like to explore?'}
+        {isGeneral ? 'How can I assist you today?' : 'What would you like to explore?'}
       </h1>
       <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed mb-8">
         {isGeneral

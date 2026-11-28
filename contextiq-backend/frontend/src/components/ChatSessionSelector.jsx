@@ -1,32 +1,33 @@
 import React, { useState } from 'react';
-import { useApp } from '../context/AppContext';
-import { 
-  X, 
-  Plus, 
-  MessageSquare, 
-  Trash2, 
-  Edit2, 
-  Check, 
-  Layers, 
-  FileText,
-  Clock,
-  Sparkles 
+import {
+  X,
+  Plus,
+  MessageSquare,
+  Trash2,
+  Edit2,
+  Check,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
+import { useConversationStore } from '../store/conversationStore';
+import { useDocumentStore } from '../store/documentStore';
+import { useUiStore } from '../store/uiStore';
 
 export const ChatSessionSelector = () => {
-  const {
-    chatSessions,
-    activeSessionId,
-    setActiveSessionId,
-    createNewSession,
-    deleteSession,
-    renameSession,
-    isChatDrawerOpen,
-    setIsChatDrawerOpen,
-    documents,
-    switchToGeneralChat,
-    switchToAllDocuments,
-  } = useApp();
+  const conversations = useConversationStore((s) => s.conversations);
+  const activeConversationId = useConversationStore((s) => s.activeConversationId);
+  const messagesByConversation = useConversationStore((s) => s.messagesByConversation);
+  const selectChat = useConversationStore((s) => s.selectChat);
+  const newChat = useConversationStore((s) => s.newChat);
+  const deleteChat = useConversationStore((s) => s.deleteChat);
+  const renameChat = useConversationStore((s) => s.renameChat);
+
+  const isChatDrawerOpen = useUiStore((s) => s.isChatDrawerOpen);
+  const setIsChatDrawerOpen = useUiStore((s) => s.setIsChatDrawerOpen);
+
+  const documents = useDocumentStore((s) => s.documents);
+  const switchToGeneralChat = useDocumentStore((s) => s.switchToGeneralChat);
+  const switchToAllDocuments = useDocumentStore((s) => s.switchToAllDocuments);
 
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
@@ -42,7 +43,7 @@ export const ChatSessionSelector = () => {
   const handleSaveRename = (id, e) => {
     e.stopPropagation();
     if (editTitle.trim()) {
-      renameSession(id, editTitle);
+      renameChat(id, editTitle);
     }
     setEditingId(null);
   };
@@ -74,9 +75,11 @@ export const ChatSessionSelector = () => {
         <div className="p-4 border-b border-slate-200 dark:border-[#1e293b] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Chat Sessions</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+              Chat Sessions
+            </h3>
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
-              {chatSessions.length}
+              {conversations.length}
             </span>
           </div>
           <button
@@ -92,7 +95,7 @@ export const ChatSessionSelector = () => {
           <button
             onClick={() => {
               switchToGeneralChat();
-              createNewSession('General AI Chat', null);
+              newChat({ title: 'General AI Chat', documentId: null });
               setIsChatDrawerOpen(false);
             }}
             className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 text-[11px] font-medium transition"
@@ -104,7 +107,7 @@ export const ChatSessionSelector = () => {
           <button
             onClick={() => {
               switchToAllDocuments();
-              createNewSession('Document RAG Chat', null);
+              newChat({ title: 'Document RAG Chat', documentId: null });
               setIsChatDrawerOpen(false);
             }}
             className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-[11px] font-medium transition shadow-sm"
@@ -117,16 +120,16 @@ export const ChatSessionSelector = () => {
 
         {/* Sessions List */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
-          {chatSessions.map((session) => {
-            const isActive = session.id === activeSessionId;
+          {conversations.map((session) => {
+            const isActive = session.id === activeConversationId;
             const isEditing = editingId === session.id;
-            const msgCount = session.messages?.length || 0;
+            const msgCount = messagesByConversation[session.id]?.length ?? 0;
 
             return (
               <div
                 key={session.id}
                 onClick={() => {
-                  setActiveSessionId(session.id);
+                  selectChat(session.id);
                   setIsChatDrawerOpen(false);
                 }}
                 className={`p-3 rounded-xl border transition-all cursor-pointer group relative ${
@@ -138,7 +141,10 @@ export const ChatSessionSelector = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     {isEditing ? (
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex items-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="text"
                           value={editTitle}
@@ -158,7 +164,9 @@ export const ChatSessionSelector = () => {
                       <div className="flex items-center gap-1.5">
                         <p
                           className={`text-xs font-medium truncate ${
-                            isActive ? 'text-blue-600 dark:text-blue-300 font-semibold' : 'text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'
+                            isActive
+                              ? 'text-blue-600 dark:text-blue-300 font-semibold'
+                              : 'text-slate-700 dark:text-slate-200 group-hover:text-slate-900 dark:group-hover:text-white'
                           }`}
                         >
                           {session.title}
@@ -172,8 +180,12 @@ export const ChatSessionSelector = () => {
                         <Layers className="w-3 h-3 text-slate-400" />
                         <span>{getDocName(session.documentId)}</span>
                       </span>
-                      <span>•</span>
-                      <span>{msgCount} messages</span>
+                      {msgCount > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>{msgCount} messages</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -187,11 +199,11 @@ export const ChatSessionSelector = () => {
                       >
                         <Edit2 className="w-3 h-3" />
                       </button>
-                      {chatSessions.length > 1 && (
+                      {conversations.length > 1 && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteSession(session.id);
+                            deleteChat(session.id);
                           }}
                           className="p-1 text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition"
                           title="Delete Chat"
@@ -209,7 +221,7 @@ export const ChatSessionSelector = () => {
 
         {/* Drawer Footer */}
         <div className="p-3 border-t border-slate-200 dark:border-[#1e293b] text-center text-[11px] text-slate-500 dark:text-slate-400">
-          Saved in browser storage
+          Saved in user-scoped browser storage
         </div>
       </div>
     </div>

@@ -1,17 +1,25 @@
 import React, { useState, useRef } from 'react';
-import { useApp } from '../context/AppContext';
 import { ArrowUp, Square, FileText, Layers, Sparkles } from 'lucide-react';
+import { useDocumentStore } from '../store/documentStore';
+import { useConversationStore } from '../store/conversationStore';
 
 export const ChatInput = () => {
-  const { sendMessage, isSending, stopGenerating, selectedDocument, chatMode } = useApp();
+  const sendMessage = useConversationStore((s) => s.sendMessage);
+  const isSending = useConversationStore((s) => s.isSending);
+  const stopGenerating = useConversationStore((s) => s.stopGenerating);
+
+  const selectedDocument = useDocumentStore((s) => s.selectedDocument);
+  const chatMode = useDocumentStore((s) => s.chatMode);
+
   const [input, setInput] = useState('');
   const textareaRef = useRef(null);
 
-  const placeholderText = chatMode === 'general'
-    ? 'Ask anything in general chat...'
-    : selectedDocument
-    ? `Ask a question about ${selectedDocument.fileName}...`
-    : 'Ask a question across all documents...';
+  const placeholderText =
+    chatMode === 'general'
+      ? 'Ask anything in general chat...'
+      : selectedDocument
+      ? `Ask a question about ${selectedDocument.fileName}...`
+      : 'Ask a question across all documents...';
 
   const handleSend = () => {
     if (!input.trim() || isSending) return;

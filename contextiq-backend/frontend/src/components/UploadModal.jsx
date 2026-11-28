@@ -1,23 +1,25 @@
 import React, { useState, useRef } from 'react';
-import { useApp } from '../context/AppContext';
-import { apiService } from '../api/apiService';
-import { 
-  X, 
-  UploadCloud, 
-  FileText, 
-  CheckCircle2, 
-  AlertCircle, 
-  Trash2, 
-  Layers, 
-  Cpu, 
-  Sparkles 
+import {
+  X,
+  UploadCloud,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+  Cpu,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { documentApi } from '../services/api';
+import { useDocumentStore } from '../store/documentStore';
+import { useUiStore } from '../store/uiStore';
 
 export const UploadModal = () => {
-  const { isUploading, setIsUploading, fetchDocuments } = useApp();
+  const isUploading = useUiStore((s) => s.isUploading);
+  const setIsUploading = useUiStore((s) => s.setIsUploading);
+  const fetchDocuments = useDocumentStore((s) => s.fetchDocuments);
+
   const [files, setFiles] = useState([]);
-  const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'completed' | 'error'
-  const [errorMessage, setErrorMessage] = useState('');
+  const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'completed'
   const fileInputRef = useRef(null);
 
   if (!isUploading) return null;
@@ -61,47 +63,62 @@ export const UploadModal = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // Perform upload
   const startUpload = async () => {
     if (files.length === 0 || uploadStatus === 'uploading') return;
 
     setUploadStatus('uploading');
-    setErrorMessage('');
+    let failedCount = 0;
 
-    // If multiple files, can upload sequentially or via uploadMultiple
-    // Here we upload each file with individual progress tracking for a rich UX
     for (let i = 0; i < files.length; i++) {
       const item = files[i];
       if (item.status === 'indexed') continue;
 
       setFiles((prev) =>
-        prev.map((f) => (f.id === item.id ? { ...f, status: 'uploading', progress: 10 } : f))
+        prev.map((f) =>
+          f.id === item.id ? { ...f, status: 'uploading', progress: 10 } : f
+        )
       );
 
       try {
-        await apiService.uploadDocument(item.file, (percent) => {
+        await documentApi.upload(item.file, (percent) => {
           setFiles((prev) =>
             prev.map((f) =>
-              f.id === item.id ? { ...f, progress: Math.max(10, Math.min(95, percent)) } : f
+              f.id === item.id
+                ? { ...f, progress: Math.max(10, Math.min(95, percent)) }
+                : f
             )
           );
         });
 
-        // Finished & indexed
         setFiles((prev) =>
-          prev.map((f) => (f.id === item.id ? { ...f, progress: 100, status: 'indexed' } : f))
+          prev.map((f) =>
+            f.id === item.id ? { ...f, progress: 100, status: 'indexed' } : f
+          )
         );
       } catch (err) {
-        console.error('Upload error for file:', item.file.name, err);
-        const msg = err?.response?.data?.message || err.message || 'Processing failed';
+        if (err?.response?.status === 401) {
+          setUploadStatus('idle');
+          return;
+        }
+        failedCount += 1;
+        const msg =
+          err?.response?.data?.message || err.message || 'Processing failed';
         setFiles((prev) =>
-          prev.map((f) => (f.id === item.id ? { ...f, status: 'failed', error: msg } : f))
+          prev.map((f) =>
+            f.id === item.id ? { ...f, status: 'failed', error: msg } : f
+          )
         );
       }
     }
 
     setUploadStatus('completed');
     await fetchDocuments();
+
+    if (failedCount === 0) {
+      toast.success('Documents indexed successfully');
+    } else {
+      toast.error(`${failedCount} document(s) failed to upload`);
+    }
   };
 
   const handleClose = () => {
@@ -130,9 +147,11 @@ export const UploadModal = () => {
               <UploadCloud className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Upload Documents to ContextIQ</h3>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Upload Documents to ContextIQ
+              </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Single or multiple files • Auto-chunking & pgvector embedding
+                Single or multiple files • Auto-chunking &amp; pgvector embedding
               </p>
             </div>
           </div>
@@ -166,7 +185,7 @@ export const UploadModal = () => {
               <UploadCloud className="w-5 h-5" />
             </div>
             <p className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200">
-              Drag & drop files here, or click to browse
+              Drag &amp; drop files here, or click to browse
             </p>
             <p className="text-[11px] text-slate-400 mt-1">
               Supports PDF, Word, Markdown, TXT, CSV (max 25MB each)
@@ -179,11 +198,12 @@ export const UploadModal = () => {
               <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                 <span>Selected Files ({files.length})</span>
                 {uploadStatus === 'uploading' && (
-                  <span className="text-blue-600 dark:text-blue-400 font-mono">{totalProgress}%</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-mono">
+                    {totalProgress}%
+                  </span>
                 )}
               </div>
 
-              {/* Overall Progress Bar */}
               {uploadStatus === 'uploading' && (
                 <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                   <div
@@ -193,7 +213,6 @@ export const UploadModal = () => {
                 </div>
               )}
 
-              {/* File list items */}
               <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                 {files.map((item) => (
                   <div
@@ -221,7 +240,10 @@ export const UploadModal = () => {
                           </span>
                         )}
                         {item.status === 'failed' && (
-                          <span className="flex items-center gap-1 text-[11px] text-rose-500 dark:text-rose-400 font-medium" title={item.error}>
+                          <span
+                            className="flex items-center gap-1 text-[11px] text-rose-500 dark:text-rose-400 font-medium"
+                            title={item.error}
+                          >
                             <AlertCircle className="w-3.5 h-3.5" />
                             Failed
                           </span>
@@ -242,7 +264,6 @@ export const UploadModal = () => {
                       </div>
                     </div>
 
-                    {/* Progress Bar per file */}
                     {(item.status === 'uploading' || item.status === 'indexed') && (
                       <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
                         <div
@@ -264,9 +285,13 @@ export const UploadModal = () => {
         <div className="px-6 py-4 border-t border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#0b101c] flex items-center justify-between">
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {allIndexed ? (
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">All documents indexed!</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                All documents indexed!
+              </span>
             ) : files.length > 0 ? (
-              <span>{files.length} document{files.length > 1 ? 's' : ''} queued</span>
+              <span>
+                {files.length} document{files.length > 1 ? 's' : ''} queued
+              </span>
             ) : (
               <span>Select files to proceed</span>
             )}
@@ -295,7 +320,7 @@ export const UploadModal = () => {
                 ) : (
                   <>
                     <UploadCloud className="w-3.5 h-3.5" />
-                    <span>Upload & Index</span>
+                    <span>Upload &amp; Index</span>
                   </>
                 )}
               </button>

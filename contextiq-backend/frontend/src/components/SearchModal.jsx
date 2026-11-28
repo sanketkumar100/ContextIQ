@@ -1,23 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useApp } from '../context/AppContext';
-import { apiService } from '../api/apiService';
-import { 
-  Search, 
-  X, 
-  Sparkles, 
-  FileText, 
-  Copy, 
-  Check, 
+import {
+  Search,
+  X,
+  FileText,
+  Copy,
+  Check,
   MessageSquare,
-  Cpu
+  Cpu,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { chatApi } from '../services/api';
+import { useDocumentStore } from '../store/documentStore';
+import { useConversationStore } from '../store/conversationStore';
+import { useUiStore } from '../store/uiStore';
 
 export const SearchModal = () => {
-  const { isSearching, setIsSearching, selectedDocument, sendMessage } = useApp();
+  const isSearching = useUiStore((s) => s.isSearching);
+  const setIsSearching = useUiStore((s) => s.setIsSearching);
+  const selectedDocument = useDocumentStore((s) => s.selectedDocument);
+  const sendMessage = useConversationStore((s) => s.sendMessage);
+
   const [query, setQuery] = useState('');
   const [minSimilarity, setMinSimilarity] = useState(0.60);
   const [isSearchingApi, setIsSearchingApi] = useState(false);
-  const [results, setResults] = useState(null); // null or { totalMatches, matches: [] }
+  const [results, setResults] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const inputRef = useRef(null);
 
@@ -38,67 +44,30 @@ export const SearchModal = () => {
 
     setIsSearchingApi(true);
     try {
-      const data = await apiService.searchSimilarity({
+      const data = await chatApi.searchSimilarity({
         query: query.trim(),
         documentId: selectedDocument?.id || null,
         topK: 10,
         similaritySearch: minSimilarity,
       });
 
-      // Secondary client-side guard: filter out matches with score below threshold
-      let matches = (data?.matches || []).filter(
-        (m) => m.similarityScore === null || m.similarityScore === undefined || m.similarityScore >= minSimilarity
+      const matches = (data?.matches || []).filter(
+        (m) =>
+          m.similarityScore === null ||
+          m.similarityScore === undefined ||
+          m.similarityScore >= minSimilarity
       );
 
-      setResults({ query: query.trim(), totalMatches: matches.length, matches });
-    } catch (err) {
-      console.warn('Search error or backend offline, checking query terms:', err);
-      // Realistic simulation: only match chunks where search keywords actually exist
-      const qLower = query.trim().toLowerCase();
-      const qWords = qLower.split(/\s+/).filter((w) => w.length > 2);
-
-      const mockDatabase = [
-        {
-          fileName: '05_Docker_Images.md',
-          chunkIndex: 0,
-          pageNumber: 1,
-          similarityScore: 0.88,
-          snippet: `# Module 5: Docker Images > **Duration:** 15 Minutes\n# Learning Objectives By the end of this chapter, you will understand:\n- What is a Docker Image?\n- Why Docker Images are required\n- How to pull images from Docker Hub\n- How to list and remove images\n- Image Layers\n- Image vs Container`,
-        },
-        {
-          fileName: '05_Docker_Images.md',
-          chunkIndex: 1,
-          pageNumber: 1,
-          similarityScore: 0.82,
-          snippet: `bash docker pull redis:8-alpine\n### What Happens Internally?\ntext docker pull nginx | Contact Docker Hub | Download Image Layers | Store Locally\n# List Images Display downloaded images: bash docker images or bash docker image ls`,
-        },
-        {
-          fileName: 'Chapter-18-ingress.md',
-          chunkIndex: 0,
-          pageNumber: 1,
-          similarityScore: 0.85,
-          snippet: `Ingress is an API object that manages external access to the services in a cluster, typically HTTP/HTTPS. Ingress can provide load balancing, SSL termination, and name-based virtual hosting across cluster workloads.`,
-        },
-        {
-          fileName: 'Chapter-36-GitOps.md',
-          chunkIndex: 0,
-          pageNumber: 1,
-          similarityScore: 0.84,
-          snippet: `GitOps is an operational framework that takes DevOps best practices used for application development, such as version control, collaboration, compliance, and CI/CD, and applies them to infrastructure automation.`,
-        },
-      ];
-
-      let pool = mockDatabase;
-      if (selectedDocument) {
-        pool = pool.filter((c) => c.fileName.toLowerCase().includes(selectedDocument.fileName.toLowerCase()));
-      }
-
-      const filtered = pool.filter((c) => {
-        const text = c.snippet.toLowerCase();
-        return qWords.length > 0 && qWords.some((w) => text.includes(w));
+      setResults({
+        query: query.trim(),
+        totalMatches: matches.length,
+        matches,
       });
-
-      setResults({ query: query.trim(), totalMatches: filtered.length, matches: filtered });
+    } catch (err) {
+      if (err?.response?.status !== 401) {
+        toast.error(err?.response?.data?.message || 'Semantic search failed.');
+        setResults({ query: query.trim(), totalMatches: 0, matches: [] });
+      }
     } finally {
       setIsSearchingApi(false);
     }
@@ -112,7 +81,9 @@ export const SearchModal = () => {
 
   const handleAskAboutChunk = (snippet) => {
     setIsSearching(false);
-    sendMessage(`Based on this context: "${snippet.slice(0, 200)}...", could you explain this in detail?`);
+    sendMessage(
+      `Based on this context: "${snippet.slice(0, 200)}...", could you explain this in detail?`
+    );
   };
 
   return (
@@ -142,8 +113,11 @@ export const SearchModal = () => {
           </button>
         </div>
 
-        {/* Search Input Bar (Matching Screenshot 3) */}
-        <form onSubmit={handleSearch} className="p-6 border-b border-slate-100 dark:border-slate-800/80">
+        {/* Search Input Bar */}
+        <form
+          onSubmit={handleSearch}
+          className="p-6 border-b border-slate-100 dark:border-slate-800/80"
+        >
           <div className="flex items-center gap-3">
             <div className="relative flex-1 flex items-center">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
@@ -175,14 +149,21 @@ export const SearchModal = () => {
             <div>
               {selectedDocument ? (
                 <span>
-                  Scoped to: <span className="text-slate-700 dark:text-slate-300 font-semibold">{selectedDocument.fileName}</span>
+                  Scoped to:{' '}
+                  <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                    {selectedDocument.fileName}
+                  </span>
                 </span>
               ) : (
-                <span>Searching: <span className="text-slate-700 dark:text-slate-300 font-semibold">All Documents</span></span>
+                <span>
+                  Searching:{' '}
+                  <span className="text-slate-700 dark:text-slate-300 font-semibold">
+                    All Documents
+                  </span>
+                </span>
               )}
             </div>
 
-            {/* Relevance / Similarity Threshold Filter */}
             <div className="flex items-center gap-1.5">
               <span className="text-slate-400">Min Similarity:</span>
               <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px]">
@@ -229,7 +210,6 @@ export const SearchModal = () => {
 
         {/* Body State */}
         <div className="flex-1 overflow-y-auto p-6 min-h-[260px] flex flex-col justify-center">
-          {/* Empty initial state matching Screenshot 3 */}
           {!results && !isSearchingApi && (
             <div className="text-center py-12 flex flex-col items-center justify-center select-none">
               <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center text-slate-500 dark:text-slate-400 mb-3">
@@ -241,12 +221,15 @@ export const SearchModal = () => {
             </div>
           )}
 
-          {/* Results list */}
           {results && (
             <div className="space-y-3">
               <div className="flex items-center justify-between text-xs text-slate-400 pb-1">
                 <span>
-                  Found <strong className="text-slate-200">{results.matches?.length || 0}</strong> matches
+                  Found{' '}
+                  <strong className="text-slate-200">
+                    {results.matches?.length || 0}
+                  </strong>{' '}
+                  matches
                 </span>
                 <span className="text-[11px] font-mono">pgvector cosine distance</span>
               </div>
@@ -254,19 +237,23 @@ export const SearchModal = () => {
               {results.matches?.length === 0 ? (
                 <div className="text-center py-12 px-4 space-y-2 select-none">
                   <p className="text-sm font-semibold text-slate-300">
-                    No relevant vector chunks found for "{results.query}".
+                    No relevant vector chunks found for &quot;{results.query}&quot;.
                   </p>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    The requested concept or fact was not found in the {selectedDocument ? 'document' : 'corpus'} with similarity &ge; {Math.round(minSimilarity * 100)}%.
-                    Try searching with different terms or selecting "Broad (50%)".
+                    The requested concept or fact was not found in the{' '}
+                    {selectedDocument ? 'document' : 'corpus'} with similarity &ge;{' '}
+                    {Math.round(minSimilarity * 100)}%. Try searching with different
+                    terms or selecting &quot;Broad (50%)&quot;.
                   </p>
                 </div>
               ) : (
                 results.matches.map((item, idx) => {
                   const matchId = `match-${idx}`;
-                  const scorePercent = item.similarityScore !== null && item.similarityScore !== undefined
-                    ? (item.similarityScore * 100).toFixed(0) + '%'
-                    : 'N/A';
+                  const scorePercent =
+                    item.similarityScore !== null &&
+                    item.similarityScore !== undefined
+                      ? (item.similarityScore * 100).toFixed(0) + '%'
+                      : 'N/A';
 
                   return (
                     <div
@@ -279,16 +266,18 @@ export const SearchModal = () => {
                           <span className="font-semibold text-slate-800 dark:text-slate-200">
                             {item.fileName}
                           </span>
-                          {item.chunkIndex !== null && item.chunkIndex !== undefined && (
-                            <span className="text-[10px] text-slate-400">
-                              Chunk #{item.chunkIndex}
-                            </span>
-                          )}
-                          {item.pageNumber !== null && item.pageNumber !== undefined && (
-                            <span className="text-[10px] text-slate-400">
-                              • Page {item.pageNumber}
-                            </span>
-                          )}
+                          {item.chunkIndex !== null &&
+                            item.chunkIndex !== undefined && (
+                              <span className="text-[10px] text-slate-400">
+                                Chunk #{item.chunkIndex}
+                              </span>
+                            )}
+                          {item.pageNumber !== null &&
+                            item.pageNumber !== undefined && (
+                              <span className="text-[10px] text-slate-400">
+                                • Page {item.pageNumber}
+                              </span>
+                            )}
                         </div>
 
                         <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-mono text-[10px] font-semibold">

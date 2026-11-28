@@ -4,16 +4,21 @@ package com.application.rag.contextiq_backend.controller;
 import com.application.rag.contextiq_backend.dto.ApiResponse;
 import com.application.rag.contextiq_backend.dto.DocumentMetadataDto;
 import com.application.rag.contextiq_backend.dto.DocumentResponseDto;
+import com.application.rag.contextiq_backend.entity.User;
 import com.application.rag.contextiq_backend.service.DocumentMetaDataService;
 import com.google.protobuf.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.xmlbeans.impl.xb.xsdschema.Attribute;
 import org.springdoc.core.converters.FileSupportConverter;
 import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -21,6 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/documents")
@@ -40,12 +46,18 @@ public class DocumentController
             description = "Endpoint to upload a document. The document will be processed and stored in the system."
     )
     public ResponseEntity<ApiResponse<DocumentResponseDto>> uploadDocument(
-            @RequestParam("file")MultipartFile file
+            @RequestParam("file")MultipartFile file,
+            Authentication authentication
             )
     {
 
+        log.info("Document Uploading started:");
+        User user = (User) authentication.getPrincipal();
+
+
+
         //processing the file
-        DocumentResponseDto documentResponseDto=documentService.uplodadAndProcess(file);
+        DocumentResponseDto documentResponseDto=documentService.uplodadAndProcess(file, user);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<DocumentResponseDto>builder()
@@ -64,11 +76,13 @@ public class DocumentController
             description = "This API is used for uploading and indexing multiple documents at once."
     )
     public ResponseEntity<ApiResponse<List<DocumentResponseDto>>> uploadMultiple(
-            @RequestParam("files")
-            List<MultipartFile> files
+            @RequestParam("files") List<MultipartFile> files,
+            Authentication authentication
     )
     {
-        List<DocumentResponseDto> responseDtos = documentService.uploadMultipleDocuments(files);
+        User user = (User) authentication.getPrincipal();
+
+        List<DocumentResponseDto> responseDtos = documentService.uploadMultipleDocuments(files, user);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<List<DocumentResponseDto>> builder()
@@ -81,7 +95,34 @@ public class DocumentController
     }
 
 
+    //list all uploaded documents of logged in user.
+    @GetMapping("/user")
+    @Operation(
+            summary = "List all uploaded documents and their indexing status of logged in user"
+    )
+    public ResponseEntity<ApiResponse<List<DocumentMetadataDto>>> getAllDocumentsOfLoggedInUser(Authentication authentication)
+    {
+        User user = (User) authentication.getPrincipal();
+
+        List<DocumentMetadataDto> documents = documentService.getAllDocumentsByUser(user);
+
+        return ResponseEntity.ok(
+                ApiResponse.<List<DocumentMetadataDto>> builder()
+                        .message("Retrieved all documents successfully")
+                        .success(true)
+                        .timestamp(LocalDateTime.now())
+                        .data(documents)
+                        .build()
+        );
+    }
+
+
+
+
+
     //list all uploaded documents.
+    //now, this can be used by ADMIN to see all the documents uploaded by all users. But for normal user, this is of no use.
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     @Operation(
             summary = "List all uploaded documents and their indexing status"

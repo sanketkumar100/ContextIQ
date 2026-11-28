@@ -3,10 +3,14 @@ package com.application.rag.contextiq_backend.service;
 
 import com.application.rag.contextiq_backend.config.AppProperties;
 import com.application.rag.contextiq_backend.dto.*;
+import com.application.rag.contextiq_backend.entity.Conversation;
+import com.application.rag.contextiq_backend.entity.User;
+import com.application.rag.contextiq_backend.repository.ConversationRepository;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -16,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,12 +37,22 @@ public class RagService
     private final AppProperties appProperties;
     private final ChatClient chatClient;
     private final JdbcTemplate jdbcTemplate;
+    private final ConversationRepository conversationRepository;
 
 
     //to ask anything related to the document.
-    public ChatResponseDto askQuestion(ChatRequestDto request)
+    public ChatResponseDto askQuestion(ChatRequestDto request, User user)
     {
         long startTime = System.currentTimeMillis();
+
+
+        String conversationId = (request.getConversationId() != null && !request.getConversationId().isBlank())
+                ? request.getConversationId()
+                : UUID.randomUUID().toString();
+
+        ensureConversationExists(conversationId, user, request.getQuestion());
+
+
         log.info("Processing query: '{}', scoped documentId: {}, useDocuments: {}", request.getQuestion(), request.getDocumentId(), request.getUseDocuments());
 
         List<Document> similarDocuments = Boolean.FALSE.equals(request.getUseDocuments())
@@ -46,7 +61,8 @@ public class RagService
                         request.getQuestion(),
                         request.getDocumentId(),
                         request.getTopK(),
-                        request.getMinSimilarity()
+                        request.getMinSimilarity(),
+                        user
                 );//getting similar documents.
 
 
@@ -60,12 +76,14 @@ public class RagService
         String contextText = buildContextString(similarDocuments);
 
         //build prompt
-        String prompt = buildPrompt(request.getQuestion(), contextText);
+        //String prompt = buildPrompt(request.getQuestion(), contextText);
 
         //send to LLM
         String answer = this.chatClient
                 .prompt()
-                .user(prompt)
+                .system(system -> system.param("doc_context", contextText))//passing the context to the LLM.
+                .user(request.getQuestion())
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .call()
                 .content();
         long responseTime = System.currentTimeMillis() -startTime;
@@ -74,7 +92,7 @@ public class RagService
         //building the response dto
         return ChatResponseDto.builder()
                 .answer(answer)
-                .conversationId(request.getConversationId() != null? request.getConversationId() : UUID.randomUUID().toString())
+                .conversationId(conversationId)
                 .citations(citationDtos)
                 .responseTimeMs(responseTime)
                 .build();
@@ -82,11 +100,36 @@ public class RagService
 
     }
 
+    private void ensureConversationExists(String conversationId, User user, @NotBlank(message = "Question cannot be empty") String question)
+    {
+        conversationRepository.findByIdAndUser(conversationId, user)
+                .orElseGet(() ->{
+                    String title = question.length() > 50 ? question.substring(0, 47) + "....." : question;
+
+                    return conversationRepository.save(
+                            Conversation.builder()
+                                    .id(conversationId)
+                                    .title(title)
+                                    .user(user)
+                                    .createdAt(LocalDateTime.now())
+                                    .updatedAt(LocalDateTime.now())
+                                    .build()
+                    );
+                });
+
+    }
+
 
     //this is for stream processing of the question and answer.
-    public Flux<String> streamQuestionAnswer(ChatRequestDto requestDto)
+    public Flux<String> streamQuestionAnswer(ChatRequestDto requestDto, User user)
     {
-        log.info("Streaming query: '{}', useDocuments: {}", requestDto.getQuestion(), requestDto.getUseDocuments());
+        String conversationId = (requestDto.getConversationId() != null && !requestDto.getConversationId().isBlank())
+                ? requestDto.getConversationId()
+                : UUID.randomUUID().toString();
+
+        ensureConversationExists(conversationId, user, requestDto.getQuestion());
+
+        log.info("Streaming query: '{}', useDocuments: {}, conversationId: {}", requestDto.getQuestion(), requestDto.getUseDocuments(), conversationId);
 
         List<Document> relevantDocuments = Boolean.FALSE.equals(requestDto.getUseDocuments())
                 ? Collections.emptyList()
@@ -94,24 +137,27 @@ public class RagService
                         requestDto.getQuestion(),
                         requestDto.getDocumentId(),
                         requestDto.getTopK(),
-                        requestDto.getMinSimilarity()
+                        requestDto.getMinSimilarity(),
+                        user
                 );
 
         //building the context and prompt for the LLM
         String contextText = buildContextString(relevantDocuments);
-        String userPrompt = buildPrompt(requestDto.getQuestion(), contextText);
+        //String userPrompt = buildPrompt(requestDto.getQuestion(), contextText);
 
         //streaming the response from the LLM
         return chatClient
                 .prompt()
-                .user(userPrompt)
+                .system(system -> system.param("doc_context", contextText))//passing the context to the LLM.
+                .user(requestDto.getQuestion())
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
                 .stream()
                 .content();
     }
 
 
 
-    private String buildPrompt(@NotBlank(message = "Question cannot be empty") String question, String contextText)
+    /*private String buildPrompt(@NotBlank(message = "Question cannot be empty") String question, String contextText)
     {
         if (contextText != null && !contextText.isBlank())
         {
@@ -140,7 +186,7 @@ public class RagService
                     """, question);
         }
 
-    }
+    }*/
 
     private String buildContextString(List<Document> similarDocuments)
     {
@@ -159,7 +205,7 @@ public class RagService
 
     }
 
-    public SearchResultDto searchSimilarityChunks(SearchRequestDto request)
+    public SearchResultDto searchSimilarityChunks(SearchRequestDto request, User user)
     {
         double effectiveSimilarity = (request.getSimilaritySearch() != null && request.getSimilaritySearch() > 0.0)
                 ? request.getSimilaritySearch()
@@ -169,7 +215,8 @@ public class RagService
                 request.getQuery(),
                 request.getDocumentId(),
                 request.getTopK(),
-                effectiveSimilarity
+                effectiveSimilarity,
+                user
         );
 
         List<CitationDto> citations = matchedDocs.stream()
@@ -248,7 +295,7 @@ public class RagService
 
     }
 
-    private List<Document> retrieveRelevantDocuments(@NotBlank(message = "Query cannot be empty") String query, UUID documentId, Integer topK, Double similaritySearch)
+    private List<Document> retrieveRelevantDocuments(@NotBlank(message = "Query cannot be empty") String query, UUID documentId, Integer topK, Double similaritySearch, User user)
     {
         int effectiveTopK = (topK!=null && topK>0) ? topK : appProperties.getRag().getTopK();
         double effectiveSimilarity = (similaritySearch !=null && similaritySearch > 0.0) 
@@ -267,13 +314,25 @@ public class RagService
                 .similarityThreshold(thresholdToUse);
 
         //if documentId is provided, we will filter the search results to only include chunks from that specific document, otherwise, we will search across all documents in the vector store.
+
+        FilterExpressionBuilder b= new FilterExpressionBuilder();
+        Filter.Expression filterExpression;
         if (documentId!=null)
         {
             log.info("Filtering from document: {}", documentId);
-            FilterExpressionBuilder b= new FilterExpressionBuilder();
-            Filter.Expression documentId1 = b.eq("documentId", documentId.toString()).build();
-            searchRequestBuilder.filterExpression(documentId1);
+            filterExpression =
+            b.and(
+//user id filter to ensure users can only access their own documents
+                    b.eq("userId", user.getId().toString()),
+                    b.eq("documentId", documentId.toString())
+                    )
+            .build();
         }
+        else
+        {
+            filterExpression = b.eq("userId", user.getId().toString()).build();
+        }
+        searchRequestBuilder.filterExpression(filterExpression);
 
         try
         {
@@ -281,7 +340,7 @@ public class RagService
             log.info("Retrieved {} chunks for query: '{}' (scoped docId: {}, threshold: {})", 
                     documents.size(), query, documentId, thresholdToUse);
 
-            // If threshold filtered out everything in All Documents mode, retry with broad threshold 0.0
+            // If threshold filtered out everything in All Documents mode, retry with broad threshold 0.0 (still scoped to user)
             if (documents.isEmpty() && documentId == null)
             {
                 log.info("Broadening search threshold to 0.0 for query: '{}'", query);
@@ -290,6 +349,7 @@ public class RagService
                                 .query(query)
                                 .topK(effectiveTopK)
                                 .similarityThreshold(0.0)
+                                .filterExpression(b.eq("userId", user.getId().toString()).build())
                                 .build()
                 );
             }

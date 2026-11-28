@@ -1,26 +1,26 @@
 import React from 'react';
-import { useApp } from '../context/AppContext';
+import { Download, RotateCcw, Radio } from 'lucide-react';
 import { WelcomeTemplates } from './WelcomeTemplates';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { 
-  Download, 
-  RotateCcw, 
-  ToggleLeft, 
-  ToggleRight,
-  Radio
-} from 'lucide-react';
+import { useDocumentStore } from '../store/documentStore';
+import { useConversationStore } from '../store/conversationStore';
+
+const EMPTY_MESSAGES = [];
 
 export const ChatArea = () => {
-  const {
-    selectedDocument,
-    chatMode,
-    activeMessages,
-    clearCurrentChat,
-    streamTokens,
-    setStreamTokens,
-    activeSession,
-  } = useApp();
+  const selectedDocument = useDocumentStore((s) => s.selectedDocument);
+  const chatMode = useDocumentStore((s) => s.chatMode);
+
+  const activeConversationId = useConversationStore((s) => s.activeConversationId);
+  const messagesByConversation = useConversationStore((s) => s.messagesByConversation);
+  const clearCurrentChat = useConversationStore((s) => s.clearCurrentChat);
+  const streamTokens = useConversationStore((s) => s.streamTokens);
+  const setStreamTokens = useConversationStore((s) => s.setStreamTokens);
+
+  const activeMessages = activeConversationId
+    ? messagesByConversation[activeConversationId] || EMPTY_MESSAGES
+    : EMPTY_MESSAGES;
 
   let contextLabel = 'All Uploaded Documents';
   let dotColor = 'bg-emerald-500';
@@ -33,11 +33,14 @@ export const ChatArea = () => {
     dotColor = 'bg-blue-500';
   }
 
-  // Export conversation as markdown file
   const handleExport = () => {
     if (!activeMessages.length) return;
     const content = activeMessages
-      .map((m) => `### ${m.role === 'user' ? 'User' : 'ContextIQ AI'}\n\n${m.text}\n\n`)
+      .map((m) => {
+        const isUser = m.messageType === 'USER' || m.role === 'user';
+        const body = m.content ?? m.text ?? '';
+        return `### ${isUser ? 'User' : 'ContextIQ AI'}\n\n${body}\n\n`;
+      })
       .join('---\n\n');
 
     const blob = new Blob([content], { type: 'text/markdown' });
@@ -59,7 +62,9 @@ export const ChatArea = () => {
         <div className="flex items-center gap-2 truncate">
           <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
           <span className="text-slate-400 dark:text-slate-500 font-normal">Context:</span>
-          <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{contextLabel}</span>
+          <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+            {contextLabel}
+          </span>
         </div>
 
         {/* Right Controls */}
@@ -77,7 +82,13 @@ export const ChatArea = () => {
             role="switch"
             aria-checked={streamTokens}
           >
-            <Radio className={`w-3.5 h-3.5 ${streamTokens ? 'text-blue-600 dark:text-blue-400 animate-pulse' : 'text-slate-400'}`} />
+            <Radio
+              className={`w-3.5 h-3.5 ${
+                streamTokens
+                  ? 'text-blue-600 dark:text-blue-400 animate-pulse'
+                  : 'text-slate-400'
+              }`}
+            />
             <span className="text-[11px] font-normal">Stream answers</span>
             <div
               className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ${

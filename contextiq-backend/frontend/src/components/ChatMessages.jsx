@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { 
-  Bot, 
-  User, 
-  Copy, 
-  Check, 
-  Clock, 
-  BookOpen, 
-  ChevronDown, 
+import {
+  Bot,
+  User,
+  Copy,
+  Check,
+  Clock,
+  BookOpen,
+  ChevronDown,
   ChevronUp,
 } from 'lucide-react';
 
@@ -30,12 +30,13 @@ export const ChatMessages = ({ messages }) => {
 };
 
 const MessageItem = ({ message }) => {
-  const isUser = message.role === 'user';
+  const isUser = message.messageType === 'USER' || message.role === 'user';
+  const bodyText = message.content ?? message.text ?? '';
   const [copied, setCopied] = useState(false);
   const [showCitations, setShowCitations] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.text);
+    navigator.clipboard.writeText(bodyText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -44,7 +45,7 @@ const MessageItem = ({ message }) => {
     return (
       <div className="flex items-start justify-end gap-2.5 select-text">
         <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-4 py-2.5 text-sm leading-relaxed break-words shadow-sm">
-          {message.text}
+          {bodyText}
         </div>
         <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 flex-shrink-0 mt-0.5 text-xs">
           <User className="w-3.5 h-3.5" />
@@ -53,7 +54,6 @@ const MessageItem = ({ message }) => {
     );
   }
 
-  // Assistant Message
   const hasCitations = message.citations && message.citations.length > 0;
 
   return (
@@ -67,11 +67,9 @@ const MessageItem = ({ message }) => {
       <div className="flex-1 max-w-[88%] rounded-2xl rounded-tl-sm bg-white dark:bg-[#121620] border border-slate-200/90 dark:border-slate-800/80 p-4 shadow-sm relative group">
         {/* Message Content */}
         <div className="prose prose-slate dark:prose-invert prose-sm max-w-none text-slate-800 dark:text-slate-200 leading-relaxed break-words font-sans">
-          {message.text ? (
+          {bodyText ? (
             <>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {message.text}
-              </ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyText}</ReactMarkdown>
               {message.isStreaming && (
                 <span className="inline-block w-1.5 h-4 ml-0.5 bg-slate-800 dark:bg-slate-200 animate-pulse align-middle rounded-sm" />
               )}
@@ -95,9 +93,7 @@ const MessageItem = ({ message }) => {
             >
               <div className="flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span>
-                  Sources ({message.citations.length} chunks)
-                </span>
+                <span>Sources ({message.citations.length} chunks)</span>
               </div>
               {showCitations ? (
                 <ChevronUp className="w-3.5 h-3.5" />
@@ -121,11 +117,12 @@ const MessageItem = ({ message }) => {
                         {cite.pageNumber !== null && cite.pageNumber !== undefined && (
                           <span>p. {cite.pageNumber}</span>
                         )}
-                        {cite.similarityScore !== null && cite.similarityScore !== undefined && (
-                          <span className="px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono text-[10px]">
-                            {(cite.similarityScore * 100).toFixed(0)}% match
-                          </span>
-                        )}
+                        {cite.similarityScore !== null &&
+                          cite.similarityScore !== undefined && (
+                            <span className="px-1.5 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono text-[10px]">
+                              {(cite.similarityScore * 100).toFixed(0)}% match
+                            </span>
+                          )}
                       </div>
                     </div>
                     <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px] leading-relaxed line-clamp-3 bg-white dark:bg-slate-950 p-2 rounded border border-slate-200 dark:border-slate-800">
