@@ -1,23 +1,42 @@
 # ContextIQ – AI-Powered Document Intelligence System
 
-**ContextIQ** is a full-stack AI-powered document intelligence platform built using **Spring Boot, Spring AI, Google Gemini, React, and PostgreSQL with pgvector**.
+<p align="center">
+  <strong>AI-Powered Document Intelligence using Retrieval-Augmented Generation (RAG)</strong>
+</p>
 
-It uses **Retrieval-Augmented Generation (RAG)** to allow users to upload documents, generate and store their embeddings, and ask natural-language questions based on the content of their documents.
+<p align="center">
+  <a href="https://context-iq-eight.vercel.app">Live Demo</a> •
+  <a href="https://github.com/sanketkumar100/ContextIQ">GitHub Repository</a>
+</p>
+
+---
+
+## Overview
+
+**ContextIQ** is a full-stack AI-powered document intelligence platform built using **Java, Spring Boot, Spring AI, Google Gemini, React, and PostgreSQL with pgvector**.
+
+It leverages **Retrieval-Augmented Generation (RAG)** to allow users to upload documents, generate and store their embeddings, and ask natural-language questions based on document content.
 
 Users can interact with individual documents or search across their uploaded documents, receive context-aware AI responses, explore relevant document chunks, and maintain conversations with persistent chat history.
+
+<details>
+<summary><strong>Live Application</strong></summary>
+
+**Try ContextIQ:** https://context-iq-eight.vercel.app
+
+</details>
 
 ---
 
 ## Key Features
 
 ### 1. Document Management
-- Upload individual documents.
-- Upload multiple documents simultaneously.
-- Parse and extract text from supported document formats.
+- Upload individual and multiple documents.
+- Extract text from supported document formats.
 - Store document metadata, including file name, content type, file size, page count, and processing status.
 - Track document processing states: `UPLOADING`, `PROCESSING`, `INDEXED`, and `FAILED`.
 - View uploaded documents and their details.
-- Delete documents and their associated vector records.
+- Delete documents and associated vector records.
 
 ### 2. Document Processing and Embeddings
 - Extract document content using Spring AI document readers.
@@ -28,14 +47,14 @@ Users can interact with individual documents or search across their uploaded doc
 - Store embeddings and metadata in PostgreSQL using pgvector.
 - Configure HNSW indexing and cosine-distance similarity search.
 
-**Document processing configuration:**
+**Document Processing Configuration**
 
 | Configuration | Value |
 |---|---:|
 | Maximum file size | 25 MB |
 | Maximum multipart request size | 50 MB |
-| Chunk size | 600 |
-| Chunk overlap | 100 |
+| Chunk size | 600 tokens |
+| Chunk overlap | 100 tokens |
 | Top-K retrieval | 5 |
 | Embedding model | gemini-embedding-001 |
 | Configured vector dimensions | 1536 |
@@ -46,12 +65,11 @@ Users can interact with individual documents or search across their uploaded doc
 - Generate context-aware responses using Google Gemini.
 - Support document-specific question answering.
 - Support searching across the user's uploaded documents.
-- Include relevant document context in the LLM prompt.
+- Include retrieved document context in LLM prompts.
 - Return source citations with generated answers.
 
 ### 4. Chat and Conversation Management
-- Normal chat responses.
-- Streaming AI responses.
+- Normal and streaming AI responses.
 - Conversation ID-based chat management.
 - Persistent chat memory using a custom JPA-based Spring AI `ChatMemory` implementation.
 - Store conversations and messages in PostgreSQL.
@@ -63,7 +81,7 @@ Users can interact with individual documents or search across their uploaded doc
 - Perform standalone semantic searches.
 - Search within a selected document.
 - Configure the number of retrieved results.
-- View relevant document chunks.
+- Explore relevant document chunks.
 - Display chunk index and page number.
 - Display similarity scores and associated metadata.
 
@@ -82,7 +100,7 @@ Users can interact with individual documents or search across their uploaded doc
 - API descriptions using `@Operation` and `@Tag`.
 - Centralized OpenAPI configuration.
 - JWT Bearer authentication support in Swagger UI.
-- Test protected endpoints by providing an access token through Swagger's **Authorize** option.
+- Test protected endpoints using the Swagger **Authorize** option.
 
 ### 8. Error Handling and Configuration
 - Global exception handling using `@RestControllerAdvice`.
@@ -234,7 +252,7 @@ Make sure you have the following installed:
 - Node.js and npm.
 - Docker and Docker Compose.
 - Google Gemini API key.
-- PostgreSQL with pgvector support (Docker Compose is used in this project).
+- PostgreSQL with pgvector support.
 
 ### 1. Clone the Repository
 
@@ -286,7 +304,7 @@ DB_PASSWORD=postgres
 
 The backend also uses application properties for the Gemini model, embedding configuration, vector-store settings, JWT configuration, and other application settings.
 
-**Important:** Configure your JWT secret using a strong secret value. Do not commit API keys, passwords, or JWT secrets to GitHub.
+**Important:** Configure your JWT secret using a strong secret value. Never commit API keys, database passwords, or JWT secrets to GitHub.
 
 ### 4. Run the Backend
 
@@ -326,11 +344,30 @@ Open the local URL displayed by Vite in your terminal.
 
 ---
 
+## Deployment
+
+ContextIQ is deployed and accessible online.
+
+| Component | Deployment |
+|---|---|
+| Frontend | Vercel |
+| Backend | Cloud-hosted Spring Boot application |
+| Database | Cloud-hosted PostgreSQL with pgvector |
+| AI Integration | Google Gemini API |
+
+**Live Application:** https://context-iq-eight.vercel.app
+
+The deployed frontend communicates with the backend through the configured production API URL.
+
+> Note: Free hosting services may have usage limits, cold starts, resource restrictions, and API quotas.
+
+---
+
 ## API Documentation
 
 ContextIQ provides interactive API documentation through Swagger UI.
 
-Once the backend is running, open:
+For local development, open:
 
 **http://localhost:8081/swagger-ui/index.html**
 
@@ -379,12 +416,12 @@ Some important application configurations include:
 | `spring.ai.google.genai.embedding.text.model` | Gemini embedding model |
 | `spring.ai.vectorstore.pgvector.index-type` | Vector index type |
 | `spring.ai.vectorstore.pgvector.distance-type` | Vector similarity distance |
-| `spring.app.rag.chunk-size` | Text chunk size |
-| `spring.app.rag.chunk-overlap` | Text chunk overlap |
-| `spring.app.rag.top-k` | Number of retrieved chunks |
-| `spring.app.rag.similarity-threshold` | Minimum similarity threshold |
+| `app.rag.chunk-size` | Text chunk size |
+| `app.rag.chunk-overlap` | Text chunk overlap |
+| `app.rag.top-k` | Number of retrieved chunks |
+| `app.rag.similarity-threshold` | Minimum similarity threshold |
 
-Refer to the backend's application properties for the actual configured property names and values.
+Refer to the backend's application properties for the exact configured property names and values.
 
 ---
 
@@ -396,7 +433,7 @@ Potential areas for further development include:
 - Enhanced document-processing support and validation.
 - More advanced retrieval and reranking strategies.
 - Improved document ownership validation across all document operations.
-- Deployment and production monitoring.
+- Enhanced deployment monitoring and production optimization.
 
 ---
 
@@ -406,6 +443,7 @@ Potential areas for further development include:
 
 - GitHub: [@sanketkumar100](https://github.com/sanketkumar100)
 - Project Repository: [ContextIQ](https://github.com/sanketkumar100/ContextIQ)
+- Live Demo: [ContextIQ Application](https://context-iq-eight.vercel.app)
 
 ---
 
