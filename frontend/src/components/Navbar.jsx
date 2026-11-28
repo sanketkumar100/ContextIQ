@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronDown,
   Shield,
+  Menu,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useDocumentStore } from '../store/documentStore';
@@ -47,6 +48,7 @@ export const Navbar = () => {
   const theme = useUiStore((s) => s.theme);
   const toggleTheme = useUiStore((s) => s.toggleTheme);
   const setIsChatDrawerOpen = useUiStore((s) => s.setIsChatDrawerOpen);
+  const setIsSidebarOpen = useUiStore((s) => s.setIsSidebarOpen);
 
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -88,18 +90,28 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="h-14 border-b border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#0c1017] px-4 flex items-center justify-between z-20 sticky top-0 transition-colors">
-      {/* Brand */}
-      <div className="flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-semibold shadow-sm">
+    <header className="h-14 shrink-0 border-b border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#0c1017] px-2.5 sm:px-4 flex items-center justify-between gap-2 z-20 sticky top-0 transition-colors">
+      {/* Brand & Mobile Sidebar Toggle */}
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+        <button
+          type="button"
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          className="lg:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/70 transition"
+          title="Open documents & chats"
+          aria-label="Open navigation sidebar"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="w-8 h-8 shrink-0 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-semibold shadow-sm">
           <Bookmark className="w-4 h-4 fill-current" />
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 tracking-tight">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="font-semibold text-sm text-slate-900 dark:text-slate-100 tracking-tight truncate">
               ContextIQ
             </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+            <span className="hidden sm:inline-block text-[10px] text-slate-500 dark:text-slate-400 font-medium px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
               RAG
             </span>
           </div>
@@ -114,24 +126,24 @@ export const Navbar = () => {
           className="flex items-center gap-2 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-800/60 text-xs text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
         >
           {scopeIcon}
-          <span className="truncate max-w-[200px]">
-            Scope:{' '}
+          <span className="truncate max-w-[120px] lg:max-w-[180px] xl:max-w-[200px]">
+            <span className="hidden lg:inline">Scope:{' '}</span>
             <span className="font-medium text-slate-900 dark:text-slate-100">
               {scopeLabel}
             </span>
           </span>
-          <span className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 ml-1">
+          <span className="hidden xl:inline text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 ml-1">
             (click to switch)
           </span>
         </button>
       </div>
 
       {/* Right Actions */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
         {/* New Chat Button */}
         <button
           onClick={() => newChat({ title: 'New Chat' })}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 transition shadow-sm"
+          className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 transition shadow-sm"
           title="Start a new chat"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -141,7 +153,7 @@ export const Navbar = () => {
         {/* Chat History Drawer */}
         <button
           onClick={() => setIsChatDrawerOpen((prev) => !prev)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 border border-slate-200 dark:border-slate-800 transition"
+          className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 border border-slate-200 dark:border-slate-800 transition"
           title="View conversation history"
         >
           <MessageSquare className="w-3.5 h-3.5" />
@@ -154,12 +166,12 @@ export const Navbar = () => {
         {/* Search Chunks Button */}
         <button
           onClick={() => setIsSearching(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 border border-slate-200 dark:border-slate-800 transition"
+          className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 border border-slate-200 dark:border-slate-800 transition"
           title="Search vector chunks (Cmd+K / Ctrl+K)"
         >
           <Search className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Search</span>
-          <kbd className="text-[10px] font-mono px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+          <kbd className="hidden md:inline-block text-[10px] font-mono px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
             ⌘K
           </kbd>
         </button>
@@ -169,7 +181,7 @@ export const Navbar = () => {
           href="http://localhost:8081/swagger-ui.html"
           target="_blank"
           rel="noopener noreferrer"
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/70 transition"
+          className="hidden sm:inline-flex p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/70 transition"
           title="Open API Documentation (Swagger)"
         >
           <ExternalLink className="w-4 h-4" />
@@ -190,11 +202,11 @@ export const Navbar = () => {
 
         {/* User Menu */}
         {user && (
-          <div className="relative pl-1.5 ml-1 border-l border-slate-200 dark:border-slate-800" ref={menuRef}>
+          <div className="relative pl-1 sm:pl-1.5 ml-0.5 sm:ml-1 border-l border-slate-200 dark:border-slate-800" ref={menuRef}>
             <button
               type="button"
               onClick={() => setIsUserMenuOpen((prev) => !prev)}
-              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/70 transition cursor-pointer"
+              className="flex items-center gap-2 px-1.5 sm:px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/70 transition cursor-pointer"
               title={`${user.username} (${user.role || 'USER'})`}
             >
               <div className="w-7 h-7 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">
@@ -230,7 +242,17 @@ export const Navbar = () => {
                   )}
                 </div>
 
-                <div className="px-1.5 pt-1.5">
+                <div className="px-1.5 pt-1.5 space-y-0.5">
+                  <a
+                    href="http://localhost:8081/swagger-ui.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="sm:hidden w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 transition"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>API Docs (Swagger)</span>
+                  </a>
                   <button
                     type="button"
                     onClick={handleLogout}

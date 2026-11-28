@@ -36,6 +36,8 @@ export const Sidebar = () => {
   const sidebarTab = useUiStore((s) => s.sidebarTab);
   const setSidebarTab = useUiStore((s) => s.setSidebarTab);
   const setIsUploading = useUiStore((s) => s.setIsUploading);
+  const isSidebarOpen = useUiStore((s) => s.isSidebarOpen);
+  const setIsSidebarOpen = useUiStore((s) => s.setIsSidebarOpen);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isDeletingId, setIsDeletingId] = useState(null);
@@ -70,8 +72,37 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="w-80 border-r border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#0c1017] flex flex-col h-[calc(100vh-3.5rem)] select-none transition-colors">
-      {/* Top Tabs: Documents vs Chats */}
+    <>
+      {/* Mobile / Tablet Drawer Backdrop */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-[85vw] max-w-xs lg:static lg:inset-auto lg:z-auto lg:w-72 xl:w-80 lg:max-w-none shrink-0 border-r border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#0c1017] flex flex-col h-full select-none shadow-2xl lg:shadow-none transition-transform duration-200 ease-out lg:transition-none lg:translate-x-0 ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Mobile Drawer Header */}
+        <div className="flex lg:hidden items-center justify-between px-3.5 pt-3 pb-1">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Workspace
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(false)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            aria-label="Close navigation sidebar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Top Tabs: Documents vs Chats */}
       <div className="px-3 pt-3 pb-2 border-b border-slate-200/80 dark:border-slate-800/80">
         <div className="bg-slate-100 dark:bg-slate-900/80 p-1 rounded-xl flex items-center gap-1 text-xs font-medium border border-slate-200/60 dark:border-slate-800/60">
           <button
@@ -144,7 +175,10 @@ export const Sidebar = () => {
           {/* Simple Upload Action */}
           <div className="px-3 pb-2">
             <button
-              onClick={() => setIsUploading(true)}
+              onClick={() => {
+                setIsUploading(true);
+                setIsSidebarOpen(false);
+              }}
               className="w-full py-2 px-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700/80 hover:border-slate-400 dark:hover:border-slate-500 bg-slate-50/70 hover:bg-slate-100/70 dark:bg-slate-900/40 dark:hover:bg-slate-900/80 text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-center gap-2 transition"
             >
               <UploadCloud className="w-4 h-4 text-slate-500 dark:text-slate-400" />
@@ -177,7 +211,10 @@ export const Sidebar = () => {
           {/* Scope quick action (All Documents) */}
           <div className="px-3 pb-1">
             <button
-              onClick={switchToAllDocuments}
+              onClick={() => {
+                switchToAllDocuments();
+                setIsSidebarOpen(false);
+              }}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition ${
                 chatMode === 'all'
                   ? 'bg-slate-100 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 font-semibold'
@@ -212,7 +249,10 @@ export const Sidebar = () => {
                 return (
                   <div
                     key={doc.id}
-                    onClick={() => selectDocumentScope(doc)}
+                    onClick={() => {
+                      selectDocumentScope(doc);
+                      setIsSidebarOpen(false);
+                    }}
                     className={`group relative p-2 rounded-xl border transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-slate-100/90 dark:bg-slate-800/90 border-slate-300 dark:border-slate-700 shadow-sm'
@@ -243,12 +283,13 @@ export const Sidebar = () => {
                         </div>
                       </div>
 
-                      {/* Actions on hover */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Actions on hover (always visible on touch/mobile) */}
+                      <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveDocModal(doc);
+                            setIsSidebarOpen(false);
                           }}
                           className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
                           title="Inspect chunks"
@@ -315,6 +356,7 @@ export const Sidebar = () => {
           </div>
         </>
       )}
-    </aside>
+      </aside>
+    </>
   );
 };

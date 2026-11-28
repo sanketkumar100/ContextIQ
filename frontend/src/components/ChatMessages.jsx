@@ -20,7 +20,7 @@ export const ChatMessages = ({ messages }) => {
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5 max-w-3xl w-full mx-auto">
+    <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5 max-w-3xl w-full mx-auto">
       {messages.map((message) => (
         <MessageItem key={message.id} message={message} />
       ))}
@@ -43,8 +43,8 @@ const MessageItem = ({ message }) => {
 
   if (isUser) {
     return (
-      <div className="flex items-start justify-end gap-2.5 select-text">
-        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-4 py-2.5 text-sm leading-relaxed break-words shadow-sm">
+      <div className="flex items-start justify-end gap-2 sm:gap-2.5 select-text">
+        <div className="max-w-[85%] sm:max-w-[80%] rounded-2xl rounded-tr-sm bg-slate-900 text-white dark:bg-slate-800 dark:text-slate-100 px-3.5 sm:px-4 py-2 sm:py-2.5 text-sm leading-relaxed break-words shadow-sm">
           {bodyText}
         </div>
         <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-300 flex-shrink-0 mt-0.5 text-xs">
@@ -57,14 +57,14 @@ const MessageItem = ({ message }) => {
   const hasCitations = message.citations && message.citations.length > 0;
 
   return (
-    <div className="flex items-start gap-3 select-text">
+    <div className="flex items-start gap-2 sm:gap-3 select-text">
       {/* Bot Avatar */}
       <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
         <Bot className="w-4 h-4" />
       </div>
 
       {/* Bot Message Box */}
-      <div className="flex-1 max-w-[88%] rounded-2xl rounded-tl-sm bg-white dark:bg-[#121620] border border-slate-200/90 dark:border-slate-800/80 p-4 shadow-sm relative group">
+      <div className="flex-1 min-w-0 max-w-[90%] sm:max-w-[88%] rounded-2xl rounded-tl-sm bg-white dark:bg-[#121620] border border-slate-200/90 dark:border-slate-800/80 p-3 sm:p-4 shadow-sm relative group">
         {/* Message Content */}
         <div className="prose prose-slate dark:prose-invert prose-sm max-w-none text-slate-800 dark:text-slate-200 leading-relaxed break-words font-sans">
           {bodyText ? (
@@ -109,11 +109,11 @@ const MessageItem = ({ message }) => {
                     key={idx}
                     className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 text-xs text-slate-700 dark:text-slate-300"
                   >
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                      <span className="font-medium text-slate-800 dark:text-slate-200">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 mb-1">
+                      <span className="font-medium text-slate-800 dark:text-slate-200 truncate min-w-0">
                         {cite.fileName || 'Document'}
                       </span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         {cite.pageNumber !== null && cite.pageNumber !== undefined && (
                           <span>p. {cite.pageNumber}</span>
                         )}

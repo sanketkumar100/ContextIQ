@@ -175,15 +175,15 @@ export const ChatSessionSelector = () => {
                     )}
 
                     {/* Metadata line */}
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 mt-1.5">
-                      <span className="flex items-center gap-1">
-                        <Layers className="w-3 h-3 text-slate-400" />
-                        <span>{getDocName(session.documentId)}</span>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400 mt-1.5">
+                      <span className="flex items-center gap-1 min-w-0">
+                        <Layers className="w-3 h-3 text-slate-400 shrink-0" />
+                        <span className="truncate max-w-[160px]">{getDocName(session.documentId)}</span>
                       </span>
                       {msgCount > 0 && (
                         <>
                           <span>•</span>
-                          <span>{msgCount} messages</span>
+                          <span className="shrink-0">{msgCount} messages</span>
                         </>
                       )}
                     </div>
@@ -191,7 +191,7 @@ export const ChatSessionSelector = () => {
 
                   {/* Actions */}
                   {!isEditing && (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
                       <button
                         onClick={(e) => handleStartRename(session, e)}
                         className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 rounded transition"

@@ -88,15 +88,15 @@ export const SearchModal = () => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
       onClick={() => setIsSearching(false)}
     >
       <div
-        className="w-full max-w-2xl bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden max-h-[85vh] transition-all"
+        className="w-full max-w-2xl bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden max-h-[88dvh] transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-4 py-3.5 sm:px-6 sm:py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
               <Search className="w-4 h-4" />
@@ -116,9 +116,9 @@ export const SearchModal = () => {
         {/* Search Input Bar */}
         <form
           onSubmit={handleSearch}
-          className="p-6 border-b border-slate-100 dark:border-slate-800/80"
+          className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800/80"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="relative flex-1 flex items-center">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
               <input
@@ -133,7 +133,7 @@ export const SearchModal = () => {
             <button
               type="submit"
               disabled={!query.trim() || isSearchingApi}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 font-medium text-xs sm:text-sm transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 font-medium text-xs sm:text-sm transition disabled:opacity-40 disabled:cursor-not-allowed shadow-sm flex items-center justify-center gap-1.5 shrink-0"
             >
               {isSearchingApi ? (
                 <>
@@ -164,9 +164,9 @@ export const SearchModal = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-slate-400">Min Similarity:</span>
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px]">
+              <div className="flex flex-wrap items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg text-[10px]">
                 <button
                   type="button"
                   onClick={() => setMinSimilarity(0.70)}
@@ -209,7 +209,7 @@ export const SearchModal = () => {
         </form>
 
         {/* Body State */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-[260px] flex flex-col justify-center">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 min-h-[220px] flex flex-col justify-center">
           {!results && !isSearchingApi && (
             <div className="text-center py-12 flex flex-col items-center justify-center select-none">
               <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800/80 flex items-center justify-center text-slate-500 dark:text-slate-400 mb-3">
@@ -260,10 +260,10 @@ export const SearchModal = () => {
                       key={idx}
                       className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#131b2e] border border-slate-200 dark:border-slate-800 space-y-2 hover:border-blue-500/40 transition group"
                     >
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+                          <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[180px] sm:max-w-xs">
                             {item.fileName}
                           </span>
                           {item.chunkIndex !== null &&
@@ -289,7 +289,7 @@ export const SearchModal = () => {
                         {item.snippet}
                       </div>
 
-                      <div className="flex items-center justify-end gap-2 pt-1 text-xs">
+                      <div className="flex flex-wrap items-center justify-end gap-2 pt-1 text-xs">
                         <button
                           onClick={() => handleCopySnippet(item.snippet, matchId)}
                           className="flex items-center gap-1 px-2.5 py-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition"

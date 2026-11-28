@@ -135,13 +135,13 @@ export const UploadModal = () => {
   const allIndexed = files.length > 0 && files.every((f) => f.status === 'indexed');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
       <div
-        className="w-full max-w-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-[#1e293b] rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]"
+        className="w-full max-w-xl bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-[#1e293b] rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90dvh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-[#1e293b] flex items-center justify-between">
+        <div className="px-4 py-3.5 sm:px-6 sm:py-4 border-b border-slate-200 dark:border-[#1e293b] flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-600/20 border border-blue-200 dark:border-blue-500/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <UploadCloud className="w-4 h-4" />
@@ -165,13 +165,13 @@ export const UploadModal = () => {
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           {/* Dropzone */}
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-300 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-900/30 dark:hover:bg-slate-900/60 rounded-xl p-6 text-center cursor-pointer transition-all duration-200 group"
+            className="border-2 border-dashed border-slate-300 hover:border-slate-400 dark:border-slate-700 dark:hover:border-slate-500 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-900/30 dark:hover:bg-slate-900/60 rounded-xl p-4 sm:p-6 text-center cursor-pointer transition-all duration-200 group"
           >
             <input
               ref={fileInputRef}
@@ -282,7 +282,7 @@ export const UploadModal = () => {
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#0b101c] flex items-center justify-between">
+        <div className="px-4 py-3.5 sm:px-6 sm:py-4 border-t border-slate-200 dark:border-[#1e293b] bg-slate-50 dark:bg-[#0b101c] flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="text-xs text-slate-500 dark:text-slate-400">
             {allIndexed ? (
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">

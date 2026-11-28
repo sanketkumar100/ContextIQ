@@ -55,25 +55,27 @@ export const ChatArea = () => {
   };
 
   return (
-    <main className="flex-1 flex flex-col h-[calc(100vh-3.5rem)] bg-slate-50/50 dark:bg-[#0b0f17] relative overflow-hidden transition-colors">
+    <main className="flex-1 min-w-0 min-h-0 flex flex-col bg-slate-50/50 dark:bg-[#0b0f17] relative overflow-hidden transition-colors">
       {/* Top Context & Controls Bar */}
-      <div className="h-10 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-[#0c1017]/70 backdrop-blur-sm px-4 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 z-10 select-none">
+      <div className="min-h-[2.5rem] shrink-0 border-b border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-[#0c1017]/70 backdrop-blur-sm px-2.5 sm:px-4 flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300 z-10 select-none">
         {/* Left Context Indicator */}
-        <div className="flex items-center gap-2 truncate">
-          <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-          <span className="text-slate-400 dark:text-slate-500 font-normal">Context:</span>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColor}`} />
+          <span className="hidden sm:inline text-slate-400 dark:text-slate-500 font-normal shrink-0">
+            Context:
+          </span>
           <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
             {contextLabel}
           </span>
         </div>
 
         {/* Right Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Stream Answers Toggle Pill */}
           <button
             type="button"
             onClick={() => setStreamTokens((prev) => !prev)}
-            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer select-none ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1 rounded-lg border text-xs font-medium transition cursor-pointer select-none ${
               streamTokens
                 ? 'bg-blue-50/70 border-blue-200 text-blue-700 dark:bg-blue-950/40 dark:border-blue-800/60 dark:text-blue-300'
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-[#121620] dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800/60'
@@ -89,7 +91,8 @@ export const ChatArea = () => {
                   : 'text-slate-400'
               }`}
             />
-            <span className="text-[11px] font-normal">Stream answers</span>
+            <span className="hidden sm:inline text-[11px] font-normal">Stream answers</span>
+            <span className="sm:hidden text-[11px] font-normal">Stream</span>
             <div
               className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors duration-200 ${
                 streamTokens ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-700'
@@ -114,7 +117,7 @@ export const ChatArea = () => {
 
           {/* Export & Clear if conversation has messages */}
           {activeMessages.length > 0 && (
-            <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-2">
+            <div className="flex items-center gap-1 border-l border-slate-200 dark:border-slate-800 pl-1.5 sm:pl-2">
               <button
                 onClick={handleExport}
                 className="p-1 rounded text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60 transition"

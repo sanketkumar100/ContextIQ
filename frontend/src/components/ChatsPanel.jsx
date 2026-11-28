@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, Plus, Trash2, Clock } from 'lucide-react';
 import { useConversationStore } from '../store/conversationStore';
+import { useUiStore } from '../store/uiStore';
 
 const formatRelativeTime = (isoString) => {
   if (!isoString) return 'Just now';
@@ -21,6 +22,7 @@ export const ChatsPanel = () => {
   const selectChat = useConversationStore((s) => s.selectChat);
   const newChat = useConversationStore((s) => s.newChat);
   const deleteChat = useConversationStore((s) => s.deleteChat);
+  const setIsSidebarOpen = useUiStore((s) => s.setIsSidebarOpen);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [isDeletingId, setIsDeletingId] = useState(null);
@@ -41,7 +43,10 @@ export const ChatsPanel = () => {
       {/* Prominent New Chat Action */}
       <div className="p-3 pb-2">
         <button
-          onClick={() => newChat()}
+          onClick={() => {
+            newChat();
+            setIsSidebarOpen(false);
+          }}
           className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition cursor-pointer"
         >
           <Plus className="w-4 h-4" />
@@ -67,7 +72,10 @@ export const ChatsPanel = () => {
             return (
               <div
                 key={chat.id}
-                onClick={() => selectChat(chat.id)}
+                onClick={() => {
+                  selectChat(chat.id);
+                  setIsSidebarOpen(false);
+                }}
                 className={`group relative p-2.5 rounded-xl border transition-all cursor-pointer ${
                   isActive
                     ? 'bg-indigo-50/80 dark:bg-indigo-950/35 border-indigo-300 dark:border-indigo-500/40 shadow-sm'
@@ -103,8 +111,8 @@ export const ChatsPanel = () => {
                     </div>
                   </div>
 
-                  {/* Hover Delete Button */}
-                  <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Hover Delete Button (always visible on touch/mobile) */}
+                  <div className="flex items-center opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

@@ -45,7 +45,7 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen overflow-y-auto select-text flex items-center justify-center bg-slate-50 dark:bg-[#090d16] px-4 py-10 transition-colors">
+    <div className="min-h-[100dvh] overflow-y-auto select-text flex items-center justify-center bg-slate-50 dark:bg-[#090d16] px-4 py-6 sm:py-10 transition-colors">
       <motion.div
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
@@ -71,7 +71,7 @@ export const Login = () => {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label

@@ -115,24 +115,24 @@ export const DocumentDetailModal = () => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150"
       onClick={() => setActiveDocModal(null)}
     >
       <div
-        className="w-full max-w-2xl bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden max-h-[90vh] transition-all"
+        className="w-full max-w-2xl bg-white dark:bg-[#0f172a] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden max-h-[90dvh] transition-all"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between">
-          <div className="flex items-start gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-500/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
-              <FileText className="w-6 h-6" />
+        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-2">
+          <div className="flex items-start gap-3 sm:gap-3.5 min-w-0 flex-1">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-blue-50 dark:bg-blue-950/70 border border-blue-200 dark:border-blue-500/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-tight break-words">
                 {doc.fileName}
               </h2>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex flex-wrap items-center gap-2 mt-1">
                 <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
                   {displayId}
                 </span>
@@ -165,7 +165,7 @@ export const DocumentDetailModal = () => {
         </div>
 
         {/* 4 Stat Cards */}
-        <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-800">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-slate-50/50 dark:bg-[#131b2e]/60">
               <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1">
@@ -210,7 +210,7 @@ export const DocumentDetailModal = () => {
         </div>
 
         {/* Chunks Section */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             <span>INDEXED VECTOR CHUNKS</span>
             <span className="text-[10px] tracking-normal px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-mono">
@@ -254,10 +254,10 @@ export const DocumentDetailModal = () => {
         </div>
 
         {/* Modal Footer */}
-        <div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0b101c] flex items-center justify-between">
+        <div className="p-4 sm:px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#0b101c] flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
           <div>
             {showConfirmDelete ? (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-rose-500 font-medium">
                   Are you sure?
                 </span>
@@ -286,7 +286,7 @@ export const DocumentDetailModal = () => {
             )}
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-end gap-2.5">
             <button
               onClick={() => setActiveDocModal(null)}
               className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 transition"
@@ -296,7 +296,7 @@ export const DocumentDetailModal = () => {
 
             <button
               onClick={handleChatWithDocument}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-xs font-semibold shadow-sm transition"
+              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 text-xs font-semibold shadow-sm transition"
             >
               <MessageSquare className="w-4 h-4" />
               <span>Chat with Document</span>

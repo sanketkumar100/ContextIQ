@@ -25,7 +25,7 @@ applyThemeToDom(initialTheme);
 export const useUiStore = create((set, get) => ({
   theme: initialTheme,
   sidebarTab: 'documents', // 'documents' | 'chats'
-  isSidebarOpen: true,
+  isSidebarOpen: false,
   isUploading: false,
   isSearching: false,
   isChatDrawerOpen: false,
@@ -59,6 +59,7 @@ export const useUiStore = create((set, get) => ({
   resetModals: () =>
     set({
       sidebarTab: 'documents',
+      isSidebarOpen: false,
       isUploading: false,
       isSearching: false,
       isChatDrawerOpen: false,
